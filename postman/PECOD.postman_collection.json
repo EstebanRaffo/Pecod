@@ -1,0 +1,721 @@
+{
+  "info": {
+    "name": "PECOD - API Tests",
+    "description": "Colección organizada por HU. Cada request tiene asserts (pm.test) que verifican los criterios de aceptación definidos en el TP Integrador. Ejecutar en orden (de arriba hacia abajo) con el entorno 'PECOD - Local', contra un backend recién seedeado (npm run prisma:seed).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Auth",
+      "item": [
+        {
+          "name": "Login Admin (seed)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"{{adminEmail}}\", \"password\": \"{{adminPassword}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU10 - login exitoso devuelve token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.accessToken).to.be.a('string');",
+                  "  pm.expect(body.user.role).to.eql('ADMIN');",
+                  "  pm.environment.set('adminToken', body.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login credenciales inválidas",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"{{adminEmail}}\", \"password\": \"password-incorrecta\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU10 - credenciales inválidas: 401 y mensaje genérico', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().message).to.eql('Email o contraseña incorrectos.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Institutions (HU9)",
+      "item": [
+        {
+          "name": "Crear institución",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/institutions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"UADE\", \"domain\": \"uade.pecod.com\", \"address\": \"Lima 775\", \"phone\": \"011-4000-0000\", \"contactEmail\": \"contacto@uade.edu.ar\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU9 - institución creada con datos obligatorios', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.be.a('string');",
+                  "  pm.environment.set('institutionId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear institución duplicada (mismo dominio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/institutions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Otra institución\", \"domain\": \"uade.pecod.com\", \"address\": \"Otra dirección\", \"phone\": \"011-1111-1111\", \"contactEmail\": \"otro@mail.com\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU9 - no permite dominio duplicado', () => {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Users (HU9)",
+      "item": [
+        {
+          "name": "Crear Profesor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Profe Test\", \"email\": \"profe.test@uade.edu.ar\", \"role\": \"PROFESSOR\", \"institutionId\": \"{{institutionId}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU9 - Profesor creado, recibe credencial inicial', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.temporaryPassword).to.be.a('string');",
+                  "  pm.environment.set('professorEmail', body.user.email);",
+                  "  pm.environment.set('professorTempPassword', body.temporaryPassword);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear Alumno",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Alumno Test\", \"email\": \"alumno.test@uade.edu.ar\", \"role\": \"STUDENT\", \"institutionId\": \"{{institutionId}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU9 - Alumno creado, recibe credencial inicial', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('studentEmail', body.user.email);",
+                  "  pm.environment.set('studentTempPassword', body.temporaryPassword);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Profesor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"{{professorEmail}}\", \"password\": \"{{professorTempPassword}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU10 - Profesor loguea con la credencial temporal', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.user.role).to.eql('PROFESSOR');",
+                  "  pm.environment.set('professorToken', body.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Alumno",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"{{studentEmail}}\", \"password\": \"{{studentTempPassword}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU10 - Alumno loguea con la credencial temporal', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.user.role).to.eql('STUDENT');",
+                  "  pm.environment.set('studentToken', body.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Courses (HU1, HU4, HU5, HU8)",
+      "item": [
+        {
+          "name": "Crear curso sin campos obligatorios",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{professorToken}}" }
+            ],
+            "url": "{{baseUrl}}/courses",
+            "body": { "mode": "raw", "raw": "{\"name\": \"\"}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU5 - rechaza curso sin campos obligatorios', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear curso",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{professorToken}}" }
+            ],
+            "url": "{{baseUrl}}/courses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Testing de Software\", \"description\": \"Curso introductorio de QA\", \"category\": \"QA\", \"tools\": \"Jest, Cypress\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU5 - curso creado sin publicar', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.isPublished).to.eql(false);",
+                  "  pm.environment.set('courseId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catálogo antes de publicar (no debe aparecer)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/courses"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU1 - catálogo no muestra cursos sin publicar', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const ids = pm.response.json().map(c => c.id);",
+                  "  pm.expect(ids).to.not.include(pm.environment.get('courseId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar curso",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{professorToken}}" }],
+            "url": "{{baseUrl}}/courses/{{courseId}}/publish"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU8 - curso publicado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().isPublished).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catálogo con filtro por categoría (HU1)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/courses?category=QA"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU1 - el filtro por categoría devuelve el curso publicado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const ids = pm.response.json().map(c => c.id);",
+                  "  pm.expect(ids).to.include(pm.environment.get('courseId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catálogo con filtro sin resultados (HU1)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/courses?category=CategoriaInexistente"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU1 - sin resultados devuelve array vacío (sin error)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.eql([]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de curso - no inscripto (HU4)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/courses/{{courseId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU4 - detalle visible, isEnrolled=false antes de inscribirse', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().isEnrolled).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Topics (HU5, HU6, HU7)",
+      "item": [
+        {
+          "name": "Crear tema",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{professorToken}}" }
+            ],
+            "url": "{{baseUrl}}/courses/{{courseId}}/topics",
+            "body": { "mode": "raw", "raw": "{\"title\": \"Introducción al testing\", \"order\": 1}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU5 - tema creado', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.environment.set('topicId', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Solicitar URL prefirmada - formato de video no soportado",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{professorToken}}" }
+            ],
+            "url": "{{baseUrl}}/uploads/presigned-url",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fileName\": \"clase.avi\", \"contentType\": \"video/x-msvideo\", \"sizeBytes\": 1000, \"kind\": \"video\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU5 - rechaza formato de video no soportado', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Solicitar URL prefirmada - video supera 500 MB",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{professorToken}}" }
+            ],
+            "url": "{{baseUrl}}/uploads/presigned-url",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fileName\": \"clase.mp4\", \"contentType\": \"video/mp4\", \"sizeBytes\": 600000000, \"kind\": \"video\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU5 - rechaza video que supera 500 MB', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Enrollments (HU2, HU3)",
+      "item": [
+        {
+          "name": "Inscribirse al curso",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/courses/{{courseId}}/enroll"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU2 - inscripción exitosa', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Doble inscripción (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/courses/{{courseId}}/enroll"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU2 - no permite doble inscripción', () => {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis cursos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/enrollments/my-courses"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU3 - el curso inscripto aparece en Mis Cursos', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const courseIds = pm.response.json().map(e => e.course.id);",
+                  "  pm.expect(courseIds).to.include(pm.environment.get('courseId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - Evaluations (HU11, HU12)",
+      "item": [
+        {
+          "name": "Crear evaluación sin preguntas (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{professorToken}}" }
+            ],
+            "url": "{{baseUrl}}/courses/{{courseId}}/evaluations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Sin preguntas\", \"minScore\": 60, \"questions\": []}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU11 - no permite evaluación sin preguntas', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear evaluación válida",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{professorToken}}" }
+            ],
+            "url": "{{baseUrl}}/courses/{{courseId}}/evaluations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Parcial 1\", \"minScore\": 60, \"questions\": [{\"text\": \"¿Qué es un criterio de aceptación?\", \"options\": [{\"text\": \"Una condición verificable\", \"isCorrect\": true}, {\"text\": \"Un comentario en el código\", \"isCorrect\": false}]}]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU11 - evaluación creada con pregunta de opción múltiple', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.environment.set('evaluationId', body.id);",
+                  "  const question = body.questions[0];",
+                  "  pm.environment.set('questionId', question.id);",
+                  "  const correct = question.options.find(o => o.isCorrect);",
+                  "  const wrong = question.options.find(o => !o.isCorrect);",
+                  "  pm.environment.set('correctOptionId', correct.id);",
+                  "  pm.environment.set('wrongOptionId', wrong.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rendir evaluación - intento 1 (respuesta incorrecta a propósito)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{studentToken}}" }
+            ],
+            "url": "{{baseUrl}}/evaluations/{{evaluationId}}/submit",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"answers\": [{\"questionId\": \"{{questionId}}\", \"selectedOptionId\": \"{{wrongOptionId}}\"}]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU12 - intento 1 desaprobado (0%)', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.passed).to.eql(false);",
+                  "  pm.expect(body.score).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rendir evaluación - intento 2 (respuesta correcta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{studentToken}}" }
+            ],
+            "url": "{{baseUrl}}/evaluations/{{evaluationId}}/submit",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"answers\": [{\"questionId\": \"{{questionId}}\", \"selectedOptionId\": \"{{correctOptionId}}\"}]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU12 - intento 2 aprobado (100%)', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.passed).to.eql(true);",
+                  "  pm.expect(body.score).to.eql(100);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rendir evaluación - ya aprobada (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{studentToken}}" }
+            ],
+            "url": "{{baseUrl}}/evaluations/{{evaluationId}}/submit",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"answers\": [{\"questionId\": \"{{questionId}}\", \"selectedOptionId\": \"{{correctOptionId}}\"}]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU12 - no permite rendir de nuevo una evaluación ya aprobada', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().message).to.include('Ya aprobaste');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

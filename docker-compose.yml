@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pecod-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pecod
+      POSTGRES_PASSWORD: pecod
+      POSTGRES_DB: pecod
+    ports:
+      - '5432:5432'
+    volumes:
+      - pecod_postgres_data:/var/lib/postgresql/data
+
+  # Redis queda comentado: en V1 solo haría falta para cache del catálogo,
+  # no para sesiones (JWT es stateless). Descomentar si se implementa cache.
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: pecod-redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - '6379:6379'
+
+volumes:
+  pecod_postgres_data:

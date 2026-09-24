@@ -1,0 +1,184 @@
+// PECOD - V1 - Esquema de base de datos
+// Estrategia multi-tenant: institutionId en las tablas que dependen de una institución.
+// Basado en las 12 HU de V1 (ver documento "Testing de Aplicaciones - TP Integrador").
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN // Administrador de Sistema (HU9, HU10)
+  PROFESSOR // Profesor (HU5-HU8, HU11)
+  STUDENT // Alumno (HU1-HU4, HU12)
+}
+
+model Institution {
+  id           String   @id @default(uuid())
+  name         String
+  domain       String   @unique // dominio/subdominio único (HU9)
+  address      String
+  phone        String
+  contactEmail String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users   User[]
+  courses Course[]
+
+  @@map("institutions")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  passwordHash   String
+  role           Role
+  // El Administrador de Sistema (HU9) no pertenece a ninguna institución (alcance global, HU10).
+  institutionId  String?
+  institution    Institution? @relation(fields: [institutionId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  coursesAsProfessor Course[]           @relation("ProfessorCourses")
+  enrollments        Enrollment[]
+  evaluationAttempts EvaluationAttempt[]
+
+  @@index([institutionId])
+  @@map("users")
+}
+
+model Course {
+  id            String   @id @default(uuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id])
+  professorId   String
+  professor     User        @relation("ProfessorCourses", fields: [professorId], references: [id])
+
+  name        String
+  description String
+  category    String // área de conocimiento / tecnología (HU1 filtro)
+  skills      String? // aptitudes que se adquieren (HU4)
+  tools       String? // herramientas necesarias (HU4)
+  isPublished Boolean  @default(false) // HU5 (alta) / HU8 (despublicar-republicar)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  topics      Topic[]
+  enrollments Enrollment[]
+  evaluations Evaluation[]
+
+  @@index([institutionId, isPublished])
+  @@index([category])
+  @@map("courses")
+}
+
+model Topic {
+  id       String @id @default(uuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+
+  title                String
+  order                Int
+  videoUrl             String? // S3 key/URL del video (HU5/HU6)
+  videoDurationSeconds Int? // máx. 1800s (30 min) validado en el service
+  contentText          String? // material teórico escrito (HU7)
+
+  materials    Material[]
+  evaluations  Evaluation[]
+
+  @@index([courseId])
+  @@map("topics")
+}
+
+model Material {
+  id      String @id @default(uuid())
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id])
+
+  fileName    String
+  fileUrl     String // S3 key/URL
+  fileType    String // pdf | xlsx | docx | txt (HU7)
+  sizeBytes   Int // máx. 10 MB validado en el service
+  uploadedAt  DateTime @default(now())
+
+  @@index([topicId])
+  @@map("materials")
+}
+
+model Enrollment {
+  id         String   @id @default(uuid())
+  studentId  String
+  student    User     @relation(fields: [studentId], references: [id])
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id])
+  enrolledAt DateTime @default(now())
+
+  @@unique([studentId, courseId]) // evita doble inscripción (HU2)
+  @@map("enrollments")
+}
+
+model Evaluation {
+  id       String  @id @default(uuid())
+  courseId String
+  course   Course  @relation(fields: [courseId], references: [id])
+  topicId  String? // null = evaluación de cierre de curso (HU11)
+  topic    Topic?  @relation(fields: [topicId], references: [id])
+
+  title     String
+  minScore  Int // puntaje mínimo de aprobación, 0-100 (HU11)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions Question[]
+  attempts  EvaluationAttempt[]
+
+  @@index([courseId])
+  @@map("evaluations")
+}
+
+model Question {
+  id           String @id @default(uuid())
+  evaluationId String
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id])
+  text         String
+  order        Int
+
+  options QuestionOption[]
+
+  @@index([evaluationId])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  text       String
+  isCorrect  Boolean  @default(false)
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+model EvaluationAttempt {
+  id            String   @id @default(uuid())
+  evaluationId  String
+  evaluation    Evaluation @relation(fields: [evaluationId], references: [id])
+  studentId     String
+  student       User       @relation(fields: [studentId], references: [id])
+
+  attemptNumber Int // 1 o 2 (HU12: máximo 2 intentos en V1)
+  score         Int
+  passed        Boolean
+  createdAt     DateTime @default(now())
+
+  @@unique([evaluationId, studentId, attemptNumber])
+  @@index([evaluationId, studentId])
+  @@map("evaluation_attempts")
+}
