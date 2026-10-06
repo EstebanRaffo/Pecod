@@ -24,7 +24,20 @@ export class UploadsService {
   private bucket: string;
 
   constructor(private config: ConfigService) {
-    this.s3 = new S3Client({ region: this.config.get<string>('AWS_REGION') });
+    const accessKeyId = this.config.get<string>('AWS_ACCESS_KEY_ID');
+    const secretAccessKey = this.config.get<string>('AWS_SECRET_ACCESS_KEY');
+
+    this.s3 = new S3Client({
+      region: this.config.get<string>('AWS_REGION'),
+      credentials:
+        accessKeyId && secretAccessKey
+          ? { accessKeyId, secretAccessKey }
+          : undefined,
+      // Evita que el SDK v3 agregue checksums CRC32 automáticos en las URLs prefirmadas.
+      // El browser no puede incluir ese header en un PUT directo, lo que causa rechazo en S3.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
+    });
     this.bucket = this.config.get<string>('AWS_S3_BUCKET') ?? 'pecod-uploads';
   }
 
