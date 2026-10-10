@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { CreateTopicDto } from './dto/create-topic.dto';
+import { UpdateTopicDto } from './dto/update-topic.dto';
 import { AttachVideoDto } from './dto/attach-video.dto';
 import { AddMaterialDto } from './dto/add-material.dto';
 
@@ -13,6 +14,17 @@ export class TopicsService {
   async createTopic(courseId: string, professor: AuthenticatedUser, dto: CreateTopicDto) {
     await this.getOwnedCourseOrThrow(courseId, professor);
     return this.prisma.topic.create({ data: { ...dto, courseId } });
+  }
+
+  async updateTopic(topicId: string, professor: AuthenticatedUser, dto: UpdateTopicDto) {
+    const topic = await this.getOwnedTopicOrThrow(topicId, professor);
+    return this.prisma.topic.update({
+      where: { id: topic.id },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title } : {}),
+        ...(dto.order !== undefined ? { order: dto.order } : {}),
+      },
+    });
   }
 
   // HU5 (carga de archivo) y HU6 (grabación) confluyen acá: ambas terminan

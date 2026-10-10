@@ -8,6 +8,7 @@ import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
+import { UpdateEvaluationDto } from './dto/update-evaluation.dto';
 import { SubmitAttemptDto } from './dto/submit-attempt.dto';
 
 const MAX_ATTEMPTS = 2; // HU12: "el Alumno tiene hasta 2 intentos por evaluación en V1"
@@ -63,6 +64,21 @@ export class EvaluationsService {
         },
       },
       include: { questions: { include: { options: true } } },
+    });
+  }
+
+  async update(evaluationId: string, professor: AuthenticatedUser, dto: UpdateEvaluationDto) {
+    const evaluation = await this.getEvaluationOrThrow(evaluationId);
+    const course = await this.prisma.course.findUnique({ where: { id: evaluation.courseId } });
+    if (!course || course.professorId !== professor.userId) {
+      throw new ForbiddenException('No podés modificar una evaluación de un curso que no te pertenece.');
+    }
+    return this.prisma.evaluation.update({
+      where: { id: evaluation.id },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title } : {}),
+        ...(dto.minScore !== undefined ? { minScore: dto.minScore } : {}),
+      },
     });
   }
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -6,6 +6,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { EvaluationsService } from './evaluations.service';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
+import { UpdateEvaluationDto } from './dto/update-evaluation.dto';
 import { SubmitAttemptDto } from './dto/submit-attempt.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -29,6 +30,16 @@ export class EvaluationsController {
     @Body() dto: CreateEvaluationDto,
   ) {
     return this.evaluationsService.create(courseId, user, dto);
+  }
+
+  @Patch('evaluations/:evaluationId')
+  @Roles(Role.PROFESSOR)
+  update(
+    @Param('evaluationId') evaluationId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateEvaluationDto,
+  ) {
+    return this.evaluationsService.update(evaluationId, user, dto);
   }
 
   // HU12
