@@ -29,7 +29,7 @@ export default function CourseEditorPage() {
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [topicTitle, setTopicTitle] = useState('');
-  const [confirmingUnpublish, setConfirmingUnpublish] = useState(false);
+  const [showUnpublishModal, setShowUnpublishModal] = useState(false);
 
   function loadCourse() {
     api.get<CourseDetail>(`/courses/${id}`).then(({ data }) => setCourse(data));
@@ -54,19 +54,16 @@ export default function CourseEditorPage() {
     loadCourse();
   }
 
-  async function togglePublish() {
+  async function handlePublish() {
     if (!course) return;
-    if (course.isPublished) {
-      // HU8: la despublicación requiere confirmación previa
-      if (!confirmingUnpublish) {
-        setConfirmingUnpublish(true);
-        return;
-      }
-      await api.patch(`/courses/${course.id}/unpublish`);
-    } else {
-      await api.patch(`/courses/${course.id}/publish`);
-    }
-    setConfirmingUnpublish(false);
+    await api.patch(`/courses/${course.id}/publish`);
+    loadCourse();
+  }
+
+  async function handleConfirmUnpublish() {
+    if (!course) return;
+    await api.patch(`/courses/${course.id}/unpublish`);
+    setShowUnpublishModal(false);
     loadCourse();
   }
 
@@ -76,18 +73,21 @@ export default function CourseEditorPage() {
     <div className="max-w-3xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">{course.name}</h1>
-        <button
-          onClick={togglePublish}
-          className={`px-4 py-2 rounded text-white ${
-            course.isPublished ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'
-          }`}
-        >
-          {course.isPublished
-            ? confirmingUnpublish
-              ? '¿Confirmar despublicación?'
-              : 'Despublicar'
-            : 'Publicar'}
-        </button>
+        {course.isPublished ? (
+          <button
+            onClick={() => setShowUnpublishModal(true)}
+            className="px-4 py-2 rounded text-white bg-amber-600 hover:bg-amber-700"
+          >
+            Despublicar
+          </button>
+        ) : (
+          <button
+            onClick={handlePublish}
+            className="px-4 py-2 rounded text-white bg-green-600 hover:bg-green-700"
+          >
+            Publicar
+          </button>
+        )}
       </div>
 
       <h2 className="font-semibold text-lg mb-2">Temario</h2>
@@ -129,6 +129,36 @@ export default function CourseEditorPage() {
         ))}
       </ul>
       <EvaluationCreator courseId={course.id} onCreated={loadEvaluations} />
+
+      {showUnpublishModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        >
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Confirmar despublicación del curso
+            </h3>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowUnpublishModal(false)}
+                className="px-4 py-2 rounded border border-slate-300 text-slate-700 hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmUnpublish}
+                className="px-4 py-2 rounded bg-amber-600 text-white hover:bg-amber-700"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

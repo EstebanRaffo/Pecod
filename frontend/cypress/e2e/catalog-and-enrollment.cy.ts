@@ -80,4 +80,23 @@ describe('HU1, HU2, HU3 - Catálogo, inscripción y Mis cursos', () => {
       cy.contains(courseName).should('be.visible');
     });
   });
+
+  it('CA: un Profesor puede despublicar un curso con popup de confirmación (HU8)', () => {
+    cy.seedFullScenario().then(({ professor, courseId }) => {
+      cy.apiLogin(professor.email, professor.password);
+      cy.visit(`/profesor/cursos/${courseId}`);
+
+      cy.contains('button', 'Despublicar').click();
+      cy.contains('Confirmar despublicación del curso').should('be.visible');
+      cy.contains('button', 'Cancelar').click();
+      cy.contains('Confirmar despublicación del curso').should('not.exist');
+      cy.contains('button', 'Despublicar').should('be.visible');
+
+      cy.contains('button', 'Despublicar').click();
+      cy.contains('Confirmar despublicación del curso').should('be.visible');
+      cy.contains('button', 'Confirmar').click();
+      cy.contains('Confirmar despublicación del curso').should('not.exist');
+      cy.contains('button', 'Publicar').should('be.visible');
+    });
+  });
 });
