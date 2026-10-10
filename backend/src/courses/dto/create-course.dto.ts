@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 // HU5: "el curso solo se guarda si están completos los campos obligatorios
-// (nombre, descripción, área/categoría, temario)"
+// (nombre, descripción, área/categoría, tecnología, temario)"
 // El temario en sí se maneja como Topics (ver módulo topics), asociados al curso ya creado.
 export class CreateCourseDto {
   @IsNotEmpty({ message: 'El nombre del curso es obligatorio.' })
@@ -20,4 +20,8 @@ export class CreateCourseDto {
   @IsOptional()
   @IsString()
   tools?: string; // herramientas necesarias (HU4)
+
+  @IsOptional()
+  @IsString()
+  technology?: string; // tecnología (HU5 / HU1)
 }

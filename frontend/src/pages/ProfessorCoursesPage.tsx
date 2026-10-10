@@ -6,6 +6,7 @@ interface Course {
   id: string;
   name: string;
   category: string;
+  tools?: string | null;
   isPublished: boolean;
 }
 
@@ -14,6 +15,7 @@ export default function ProfessorCoursesPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [technology, setTechnology] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function loadCourses() {
@@ -26,11 +28,18 @@ export default function ProfessorCoursesPage() {
     e.preventDefault();
     setError(null);
     try {
-      // HU5: campos obligatorios (nombre, descripción, área/categoría)
-      await api.post('/courses', { name, description, category });
+      // HU5: campos obligatorios (nombre, descripción, área/categoría, tecnología)
+      await api.post('/courses', {
+        name,
+        description,
+        category,
+        technology,
+        tools: technology,
+      });
       setName('');
       setDescription('');
       setCategory('');
+      setTechnology('');
       loadCourses();
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'No se pudo crear el curso.');
@@ -64,6 +73,13 @@ export default function ProfessorCoursesPage() {
           required
           className="w-full border border-slate-300 rounded px-3 py-2"
         />
+        <input
+          placeholder="Tecnología"
+          value={technology}
+          onChange={(e) => setTechnology(e.target.value)}
+          required
+          className="w-full border border-slate-300 rounded px-3 py-2"
+        />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button type="submit" className="bg-slate-800 text-white px-4 py-2 rounded">
           Crear curso
@@ -78,7 +94,15 @@ export default function ProfessorCoursesPage() {
             className="flex items-center justify-between border rounded-lg p-4 hover:shadow-md transition"
           >
             <div>
-              <span className="text-xs uppercase text-slate-500">{course.category}</span>
+              <div className="flex items-center gap-1.5 text-xs uppercase text-slate-500">
+                <span>{course.category}</span>
+                {course.tools && (
+                  <>
+                    <span>·</span>
+                    <span className="normal-case">{course.tools}</span>
+                  </>
+                )}
+              </div>
               <h3 className="font-semibold">{course.name}</h3>
             </div>
             <span

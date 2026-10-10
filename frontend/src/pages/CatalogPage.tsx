@@ -7,6 +7,7 @@ interface Course {
   name: string;
   description: string;
   category: string;
+  tools?: string | null;
 }
 
 export default function CatalogPage() {
@@ -18,8 +19,8 @@ export default function CatalogPage() {
   async function loadCourses() {
     setLoading(true);
     const params: Record<string, string> = {};
-    if (category) params.category = category;
-    if (technology) params.technology = technology;
+    if (category.trim()) params.category = category.trim();
+    if (technology.trim()) params.technology = technology.trim();
     const { data } = await api.get<Course[]>('/courses', { params });
     setCourses(data);
     setLoading(false);
@@ -39,7 +40,11 @@ export default function CatalogPage() {
     setCategory('');
     setTechnology('');
     // se recarga sin filtros
-    api.get<Course[]>('/courses').then(({ data }) => setCourses(data));
+    setLoading(true);
+    api.get<Course[]>('/courses').then(({ data }) => {
+      setCourses(data);
+      setLoading(false);
+    });
   }
 
   return (
@@ -80,7 +85,14 @@ export default function CatalogPage() {
               to={`/cursos/${course.id}`}
               className="block border rounded-lg p-4 hover:shadow-md transition"
             >
-              <span className="text-xs uppercase text-slate-500">{course.category}</span>
+              <div className="flex items-center justify-between text-xs uppercase text-slate-500 mb-1">
+                <span>{course.category}</span>
+                {course.tools && (
+                  <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[11px] font-medium normal-case">
+                    {course.tools}
+                  </span>
+                )}
+              </div>
               <h2 className="font-semibold text-lg">{course.name}</h2>
               <p className="text-sm text-slate-600 line-clamp-2">{course.description}</p>
             </Link>

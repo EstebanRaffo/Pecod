@@ -17,6 +17,17 @@ describe('HU1, HU2, HU3 - Catálogo, inscripción y Mis cursos', () => {
       cy.contains('button', 'Filtrar').click();
       cy.contains('Sin resultados.').should('be.visible');
 
+      // HU1: filtro por tecnología
+      cy.get('input[placeholder="Área / categoría"]').clear();
+      cy.get('input[placeholder="Tecnología"]').type('Cypress');
+      cy.contains('button', 'Filtrar').click();
+      cy.contains('Curso Cypress').should('be.visible');
+
+      // HU1: filtro por tecnología sin resultados
+      cy.get('input[placeholder="Tecnología"]').clear().type('TecnologiaInexistente');
+      cy.contains('button', 'Filtrar').click();
+      cy.contains('Sin resultados.').should('be.visible');
+
       // Limpiar filtro y entrar al detalle
       cy.contains('button', 'Limpiar').click();
       cy.contains('Curso Cypress').click();
@@ -51,6 +62,22 @@ describe('HU1, HU2, HU3 - Catálogo, inscripción y Mis cursos', () => {
       cy.contains('Sin cursos en progreso.').should('be.visible');
       cy.contains('Ir al catálogo').click();
       cy.url().should('include', '/catalogo');
+    });
+  });
+
+  it('CA: un Profesor puede crear un curso con el campo tecnología (HU5)', () => {
+    cy.seedFullScenario().then(({ professor }) => {
+      cy.apiLogin(professor.email, professor.password);
+      cy.visit('/profesor/cursos');
+
+      const courseName = `Curso NestJS ${Date.now()}`;
+      cy.get('input[placeholder="Nombre del curso"]').type(courseName);
+      cy.get('textarea[placeholder="Descripción"]').type('Curso backend con NestJS');
+      cy.get('input[placeholder="Área / categoría"]').type('Backend');
+      cy.get('input[placeholder="Tecnología"]').type('NestJS');
+      cy.contains('button', 'Crear curso').click();
+
+      cy.contains(courseName).should('be.visible');
     });
   });
 });

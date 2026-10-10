@@ -57,9 +57,12 @@ export class CoursesService {
 
   // HU5: alta de curso. Queda sin publicar hasta que el Profesor lo publique (HU8).
   create(user: AuthenticatedUser, dto: CreateCourseDto) {
+    const { technology, ...rest } = dto;
+    const tools = dto.tools ?? technology;
     return this.prisma.course.create({
       data: {
-        ...dto,
+        ...rest,
+        ...(tools !== undefined ? { tools } : {}),
         professorId: user.userId,
         institutionId: user.institutionId!,
         isPublished: false,
@@ -70,7 +73,15 @@ export class CoursesService {
   // HU8: editar curso existente. Solo el Profesor dueño del curso puede editarlo.
   async update(id: string, user: AuthenticatedUser, dto: UpdateCourseDto) {
     const course = await this.getOwnedCourseOrThrow(id, user);
-    return this.prisma.course.update({ where: { id: course.id }, data: dto });
+    const { technology, ...rest } = dto;
+    const tools = dto.tools !== undefined ? dto.tools : technology;
+    return this.prisma.course.update({
+      where: { id: course.id },
+      data: {
+        ...rest,
+        ...(tools !== undefined ? { tools } : {}),
+      },
+    });
   }
 
   // HU8: publicar / despublicar. Se permite despublicar con alumnos inscriptos

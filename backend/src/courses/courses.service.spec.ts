@@ -104,6 +104,23 @@ describe('CoursesService', () => {
         }),
       );
     });
+
+    it('CA: el campo tecnología se guarda correctamente para el curso', async () => {
+      prisma.course.create.mockResolvedValue({ id: 'course-1' });
+
+      await service.create(professor, {
+        name: 'React Avanzado',
+        description: 'Curso de React',
+        category: 'Frontend',
+        technology: 'React',
+      });
+
+      expect(prisma.course.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ tools: 'React' }),
+        }),
+      );
+    });
   });
 
   describe('update / publish (HU8)', () => {
