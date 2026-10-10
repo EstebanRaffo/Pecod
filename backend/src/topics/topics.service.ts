@@ -60,7 +60,7 @@ export class TopicsService {
     const topic = await this.getOwnedTopicOrThrow(topicId, professor);
     return this.prisma.topic.update({
       where: { id: topic.id },
-      data: { screenRecordingUrl: null },
+      data: { screenRecordingUrl: null, videoDurationSeconds: null },
     });
   }
 

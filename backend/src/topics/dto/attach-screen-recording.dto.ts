@@ -1,9 +1,10 @@
-import { IsInt, IsNotEmpty, IsPositive, Max } from 'class-validator';
+import { IsInt, IsNotEmpty, IsPositive, IsUrl, Max } from 'class-validator';
 
 // HU6: video generado por grabación de pantalla en la plataforma.
 // El frontend sube el blob a S3 y luego llama a este endpoint con la URL resultante.
 export class AttachScreenRecordingDto {
   @IsNotEmpty({ message: 'La URL del video de grabación es obligatoria.' })
+  @IsUrl({}, { message: 'La URL del video de grabación no es válida.' })
   screenRecordingUrl: string;
 
   @IsInt()

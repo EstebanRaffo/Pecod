@@ -1,33 +1,52 @@
-# Verification Note
+# Verification — Review Findings Fix
 
-## Frontend build
-**Result: PASS**
-Command: `cd frontend && npm run build`
-Output: `tsc -b` type-check succeeded, Vite bundled 95 modules to `dist/` in 1.30 s (zero TypeScript errors, zero Vite errors).
+## Date
+2025-01-10
 
-## Backend build
-**Result: PASS**
+## Review Findings Addressed
+
+### Finding 1 — Migration not run
+**Status: FIXED**
+Ran `npx prisma migrate dev --name add_screen_recording_url` in the backend directory.
+Migration `20261010233805_add_screen_recording_url` was created and applied successfully.
+The `screenRecordingUrl` column now exists in the database.
+Prisma Client regenerated (v5.22.0). Removed the `// MIGRATION PENDING` comment from schema.prisma.
+
+### Finding 2 — Stale `videoDurationSeconds` after screen recording delete
+**Status: FIXED**
+Updated `deleteScreenRecording` in `topics.service.ts` to also set `videoDurationSeconds: null`,
+mirroring the pattern in `deleteVideo`. The update data is now:
+`data: { screenRecordingUrl: null, videoDurationSeconds: null }`
+
+### Finding 3 — No URL validation on video URL fields
+**Status: FIXED**
+Added `@IsUrl({}, { message: '...' })` decorator to:
+- `AttachVideoDto.videoUrl` in `attach-video.dto.ts`
+- `AttachScreenRecordingDto.screenRecordingUrl` in `attach-screen-recording.dto.ts`
+
+### Finding 4 — No tests for the four new endpoints
+**Status: FIXED**
+Added test coverage in `topics.service.spec.ts` for:
+- `deleteVideo`: 2 tests (unauthorized professor, successful delete with null fields)
+- `attachScreenRecording`: 2 tests (unauthorized professor, successful attach)
+- `deleteScreenRecording`: 2 tests (unauthorized professor, successful delete with null fields including videoDurationSeconds)
+- `deleteMaterial`: 4 tests (unauthorized professor, wrong topic, non-existent material, successful delete)
+
+Added `delete: jest.fn()` to `MockPrismaService` model mock to support `material.delete` calls.
+
+Total test count in `topics.service.spec.ts`: 17 (was 7, added 10 new tests).
+
+## Build Results
+
+### Backend
 Command: `cd backend && npm run build`
-Output: `nest build` exited with code 0 (zero TypeScript errors).
+Result: **PASS** — NestJS build succeeded with zero errors.
 
-## Prisma generate
-**Result: PASS**
-`npx prisma generate` regenerated the Prisma client from the updated schema (added `screenRecordingUrl String?` to the `Topic` model). Exit code 0.
+### Backend Tests
+Command: `cd backend && npx jest --testPathPattern=topics.service.spec --no-coverage`
+Result: **PASS** — 17/17 tests passed.
 
-## Migration status
-⚠️ The `screenRecordingUrl` column was added to `schema.prisma` but the database migration has NOT been run.
-The team must execute the following before deploying:
-```
-cd backend
-npx prisma migrate dev --name add_screen_recording_url
-```
-
-## Changes implemented
-- `backend/prisma/schema.prisma`: added `screenRecordingUrl String?` to `Topic`.
-- `backend/src/topics/dto/attach-screen-recording.dto.ts`: new DTO for screen-recording attach.
-- `backend/src/topics/topics.service.ts`: added `attachScreenRecording`, `deleteVideo`, `deleteScreenRecording`, `deleteMaterial`.
-- `backend/src/topics/topics.controller.ts`: added `POST /topics/:id/screen-recording`, `DELETE /topics/:id/video`, `DELETE /topics/:id/screen-recording`, `DELETE /topics/:id/materials/:materialId`.
-- `backend/src/courses/courses.service.ts`: `findDetail` now selects `screenRecordingUrl` and `materials` per topic.
-- `frontend/src/api/uploads.ts`: added `deleteTopicVideo`, `deleteTopicScreenRecording`, `deleteMaterial` helpers.
-- `frontend/src/pages/CourseEditorPage.tsx`: added `Material` interface, extended `Topic` with `screenRecordingUrl` and `materials`; removed "Con video" badge; passes new props to `<TopicMediaUploader>`.
-- `frontend/src/components/TopicMediaUploader.tsx`: new props interface; HU6 now posts to `/screen-recording` endpoint; three preview+delete blocks added.
+### Frontend
+Command: `cd frontend && npm run build`
+Result: **PASS** — TypeScript + Vite build succeeded with zero errors.
+Output: `✓ 95 modules transformed. dist/assets/index-bwC-vEqf.js 267.31 kB │ gzip: 86.22 kB`

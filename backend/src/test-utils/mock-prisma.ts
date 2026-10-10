@@ -7,6 +7,7 @@ type ModelMock = {
   findMany: jest.Mock;
   create: jest.Mock;
   update: jest.Mock;
+  delete: jest.Mock;
 };
 
 function createModelMock(): ModelMock {
@@ -16,6 +17,7 @@ function createModelMock(): ModelMock {
     findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    delete: jest.fn(),
   };
 }
 

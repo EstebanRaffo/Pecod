@@ -1,10 +1,11 @@
-import { IsInt, IsNotEmpty, IsPositive, Max } from 'class-validator';
+import { IsInt, IsNotEmpty, IsPositive, IsUrl, Max } from 'class-validator';
 
 // HU5: video cargado desde archivo del dispositivo (MP4/MOV/WebM ya validados en UploadsService).
 // HU6: video generado por grabación de pantalla en la plataforma.
 // En ambos casos, una vez subido a S3/Mux, el frontend llama a este endpoint con la URL resultante.
 export class AttachVideoDto {
   @IsNotEmpty({ message: 'La URL del video es obligatoria.' })
+  @IsUrl({}, { message: 'La URL del video no es válida.' })
   videoUrl: string;
 
   @IsInt()

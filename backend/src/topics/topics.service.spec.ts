@@ -113,4 +113,125 @@ describe('TopicsService', () => {
       expect(result.fileName).toBe('apunte.pdf');
     });
   });
+
+  describe('deleteVideo (HU5)', () => {
+    it('CA: un Profesor de otro curso no puede eliminar el video', async () => {
+      prisma.topic.findUnique.mockResolvedValue({
+        id: 'topic-1',
+        course: { professorId: 'otro-profesor' },
+      });
+
+      await expect(service.deleteVideo('topic-1', professor)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('CA: el Profesor dueño puede eliminar el video — videoUrl y videoDurationSeconds quedan en null', async () => {
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', course: { professorId: 'prof-1' } });
+      prisma.topic.update.mockResolvedValue({ id: 'topic-1', videoUrl: null, videoDurationSeconds: null });
+
+      const result = await service.deleteVideo('topic-1', professor);
+
+      expect(prisma.topic.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { videoUrl: null, videoDurationSeconds: null } }),
+      );
+      expect(result.videoUrl).toBeNull();
+      expect(result.videoDurationSeconds).toBeNull();
+    });
+  });
+
+  describe('attachScreenRecording (HU6)', () => {
+    it('CA: un Profesor de otro curso no puede adjuntar una grabación de pantalla', async () => {
+      prisma.topic.findUnique.mockResolvedValue({
+        id: 'topic-1',
+        course: { professorId: 'otro-profesor' },
+      });
+
+      await expect(
+        service.attachScreenRecording('topic-1', professor, {
+          screenRecordingUrl: 'https://s3/grabacion.webm',
+          videoDurationSeconds: 300,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('CA: el Profesor dueño puede adjuntar una grabación de pantalla', async () => {
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', course: { professorId: 'prof-1' } });
+      prisma.topic.update.mockResolvedValue({
+        id: 'topic-1',
+        screenRecordingUrl: 'https://s3/grabacion.webm',
+        videoDurationSeconds: 300,
+      });
+
+      const result = await service.attachScreenRecording('topic-1', professor, {
+        screenRecordingUrl: 'https://s3/grabacion.webm',
+        videoDurationSeconds: 300,
+      });
+
+      expect(result.screenRecordingUrl).toBe('https://s3/grabacion.webm');
+    });
+  });
+
+  describe('deleteScreenRecording (HU6)', () => {
+    it('CA: un Profesor de otro curso no puede eliminar la grabación de pantalla', async () => {
+      prisma.topic.findUnique.mockResolvedValue({
+        id: 'topic-1',
+        course: { professorId: 'otro-profesor' },
+      });
+
+      await expect(service.deleteScreenRecording('topic-1', professor)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('CA: el Profesor dueño puede eliminar la grabación — screenRecordingUrl y videoDurationSeconds quedan en null', async () => {
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', course: { professorId: 'prof-1' } });
+      prisma.topic.update.mockResolvedValue({
+        id: 'topic-1',
+        screenRecordingUrl: null,
+        videoDurationSeconds: null,
+      });
+
+      const result = await service.deleteScreenRecording('topic-1', professor);
+
+      expect(prisma.topic.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { screenRecordingUrl: null, videoDurationSeconds: null } }),
+      );
+      expect(result.screenRecordingUrl).toBeNull();
+      expect(result.videoDurationSeconds).toBeNull();
+    });
+  });
+
+  describe('deleteMaterial (HU7)', () => {
+    it('CA: un Profesor de otro curso no puede eliminar un material', async () => {
+      prisma.topic.findUnique.mockResolvedValue({
+        id: 'topic-1',
+        course: { professorId: 'otro-profesor' },
+      });
+
+      await expect(service.deleteMaterial('topic-1', 'mat-1', professor)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('CA: un material que no pertenece al tema lanza NotFoundException', async () => {
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', course: { professorId: 'prof-1' } });
+      // material pertenece a otro topic
+      prisma.material.findUnique.mockResolvedValue({ id: 'mat-1', topicId: 'otro-topic' });
+
+      await expect(service.deleteMaterial('topic-1', 'mat-1', professor)).rejects.toThrow(NotFoundException);
+    });
+
+    it('CA: un material inexistente lanza NotFoundException', async () => {
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', course: { professorId: 'prof-1' } });
+      prisma.material.findUnique.mockResolvedValue(null);
+
+      await expect(service.deleteMaterial('topic-1', 'mat-1', professor)).rejects.toThrow(NotFoundException);
+    });
+
+    it('CA: el Profesor dueño puede eliminar un material del tema', async () => {
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', course: { professorId: 'prof-1' } });
+      prisma.material.findUnique.mockResolvedValue({ id: 'mat-1', topicId: 'topic-1' });
+      prisma.material.delete.mockResolvedValue({ id: 'mat-1' });
+
+      const result = await service.deleteMaterial('topic-1', 'mat-1', professor);
+
+      expect(prisma.material.delete).toHaveBeenCalledWith({ where: { id: 'mat-1' } });
+      expect(result.id).toBe('mat-1');
+    });
+  });
 });
