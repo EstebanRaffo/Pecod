@@ -43,3 +43,17 @@ export function getVideoDurationSeconds(file: File | Blob): Promise<number> {
     video.src = URL.createObjectURL(file);
   });
 }
+
+// ── Delete helpers ───────────────────────────────────────────────────────────
+
+export async function deleteTopicVideo(topicId: string): Promise<void> {
+  await api.delete(`/topics/${topicId}/video`);
+}
+
+export async function deleteTopicScreenRecording(topicId: string): Promise<void> {
+  await api.delete(`/topics/${topicId}/screen-recording`);
+}
+
+export async function deleteMaterial(topicId: string, materialId: string): Promise<void> {
+  await api.delete(`/topics/${topicId}/materials/${materialId}`);
+}

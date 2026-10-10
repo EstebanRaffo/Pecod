@@ -5,6 +5,7 @@ import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { AttachVideoDto } from './dto/attach-video.dto';
+import { AttachScreenRecordingDto } from './dto/attach-screen-recording.dto';
 import { AddMaterialDto } from './dto/add-material.dto';
 
 @Injectable()
@@ -27,14 +28,50 @@ export class TopicsService {
     });
   }
 
-  // HU5 (carga de archivo) y HU6 (grabación) confluyen acá: ambas terminan
-  // adjuntando una URL de video ya subida/transcodificada al tema.
+  // HU5 (carga de archivo): adjunta la URL del video subido como archivo.
   async attachVideo(topicId: string, professor: AuthenticatedUser, dto: AttachVideoDto) {
     const topic = await this.getOwnedTopicOrThrow(topicId, professor);
     return this.prisma.topic.update({
       where: { id: topic.id },
       data: { videoUrl: dto.videoUrl, videoDurationSeconds: dto.videoDurationSeconds },
     });
+  }
+
+  // HU6 (grabación de pantalla): adjunta la URL del video grabado en la plataforma.
+  async attachScreenRecording(topicId: string, professor: AuthenticatedUser, dto: AttachScreenRecordingDto) {
+    const topic = await this.getOwnedTopicOrThrow(topicId, professor);
+    return this.prisma.topic.update({
+      where: { id: topic.id },
+      data: { screenRecordingUrl: dto.screenRecordingUrl, videoDurationSeconds: dto.videoDurationSeconds },
+    });
+  }
+
+  // Elimina el video subido como archivo.
+  async deleteVideo(topicId: string, professor: AuthenticatedUser) {
+    const topic = await this.getOwnedTopicOrThrow(topicId, professor);
+    return this.prisma.topic.update({
+      where: { id: topic.id },
+      data: { videoUrl: null, videoDurationSeconds: null },
+    });
+  }
+
+  // Elimina el video de grabación de pantalla.
+  async deleteScreenRecording(topicId: string, professor: AuthenticatedUser) {
+    const topic = await this.getOwnedTopicOrThrow(topicId, professor);
+    return this.prisma.topic.update({
+      where: { id: topic.id },
+      data: { screenRecordingUrl: null },
+    });
+  }
+
+  // Elimina un material adjunto de un tema.
+  async deleteMaterial(topicId: string, materialId: string, professor: AuthenticatedUser) {
+    await this.getOwnedTopicOrThrow(topicId, professor);
+    const material = await this.prisma.material.findUnique({ where: { id: materialId } });
+    if (!material || material.topicId !== topicId) {
+      throw new NotFoundException('Material no encontrado.');
+    }
+    return this.prisma.material.delete({ where: { id: materialId } });
   }
 
   // HU7: material teórico adicional (archivo adjunto).

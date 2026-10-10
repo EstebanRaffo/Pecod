@@ -40,7 +40,7 @@ export class CoursesService {
   async findDetail(id: string, user: AuthenticatedUser) {
     const course = await this.prisma.course.findUnique({
       where: { id },
-      include: { topics: { orderBy: { order: 'asc' }, select: { id: true, title: true, order: true, videoUrl: true } } },
+      include: { topics: { orderBy: { order: 'asc' }, select: { id: true, title: true, order: true, videoUrl: true, screenRecordingUrl: true, materials: true } } },
     });
     if (!course) throw new NotFoundException('Curso no encontrado.');
 

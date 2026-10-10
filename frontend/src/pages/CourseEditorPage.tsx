@@ -20,11 +20,20 @@ function PencilIcon() {
 }
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
+interface Material {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+}
+
 interface Topic {
   id: string;
   title: string;
   order: number;
   videoUrl?: string | null;
+  screenRecordingUrl?: string | null;
+  materials?: Material[];
 }
 
 interface Evaluation {
@@ -338,15 +347,12 @@ export default function CourseEditorPage() {
                 <span className="text-sm">
                   {topic.order}. {topic.title}
                 </span>
-                {topic.videoUrl && (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                    Con video
-                  </span>
-                )}
               </div>
               <TopicMediaUploader
                 topicId={topic.id}
-                hasVideo={!!topic.videoUrl}
+                videoUrl={topic.videoUrl ?? null}
+                screenRecordingUrl={topic.screenRecordingUrl ?? null}
+                materials={topic.materials ?? []}
                 onChanged={loadCourse}
               />
             </li>

@@ -85,7 +85,9 @@ model Topic {
 
   title                String
   order                Int
-  videoUrl             String? // S3 key/URL del video (HU5/HU6)
+  videoUrl             String? // S3 key/URL del video subido como archivo (HU5)
+  screenRecordingUrl   String? // S3 key/URL del video de grabación de pantalla (HU6)
+  // MIGRATION PENDING: npx prisma migrate dev --name add_screen_recording_url
   videoDurationSeconds Int? // máx. 1800s (30 min) validado en el service
   contentText          String? // material teórico escrito (HU7)
 

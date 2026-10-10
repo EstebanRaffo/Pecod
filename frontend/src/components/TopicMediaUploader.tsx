@@ -1,11 +1,19 @@
 import { useState } from 'react';
 import { api } from '../api/client';
-import { getVideoDurationSeconds, uploadFileToS3 } from '../api/uploads';
+import {
+  getVideoDurationSeconds,
+  uploadFileToS3,
+  deleteTopicVideo,
+  deleteTopicScreenRecording,
+  deleteMaterial,
+} from '../api/uploads';
 import { useScreenRecorder } from '../hooks/useScreenRecorder';
 
 interface Props {
   topicId: string;
-  hasVideo: boolean;
+  videoUrl: string | null;
+  screenRecordingUrl: string | null;
+  materials: Array<{ id: string; fileName: string; fileUrl: string; fileType: string }>;
   onChanged: () => void;
 }
 
@@ -13,24 +21,51 @@ const MAX_VIDEO_DURATION_SECONDS = 1800; // 30 min
 const MAX_MATERIAL_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const SUPPORTED_MATERIAL_EXT = ['pdf', 'xlsx', 'xls', 'docx', 'doc', 'txt'];
 
-export default function TopicMediaUploader({ topicId, hasVideo, onChanged }: Props) {
+// ── Ícono de papelera (Heroicons trash, 20×20 solid) ─────────────────────────
+function TrashIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-3 w-3"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+export default function TopicMediaUploader({
+  topicId,
+  videoUrl,
+  screenRecordingUrl,
+  materials,
+  onChanged,
+}: Props) {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { isRecording, start, stop, cancel, error: recordError } = useScreenRecorder();
+
+  // ── Upload helpers ────────────────────────────────────────────────────────
 
   async function attachVideo(file: File | Blob, fileName: string) {
     setError(null);
     setStatus('Subiendo video...');
     try {
       const durationSeconds = await getVideoDurationSeconds(file);
-      // HU5/HU6: "duración máxima del video: 30 minutos"
+      // HU5: "duración máxima del video: 30 minutos"
       if (durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
         setError('El video supera la duración máxima de 30 minutos.');
         setStatus(null);
         return;
       }
-      const videoUrl = await uploadFileToS3(file, 'video', fileName);
-      await api.post(`/topics/${topicId}/video`, { videoUrl, videoDurationSeconds: durationSeconds });
+      const url = await uploadFileToS3(file, 'video', fileName);
+      await api.post(`/topics/${topicId}/video`, { videoUrl: url, videoDurationSeconds: durationSeconds });
       setStatus('Video cargado correctamente.');
       onChanged();
     } catch (err: any) {
@@ -48,11 +83,30 @@ export default function TopicMediaUploader({ topicId, hasVideo, onChanged }: Pro
     e.target.value = '';
   }
 
-  // HU6: grabación de pantalla dentro de la plataforma
+  // HU6: grabación de pantalla — persiste en screenRecordingUrl (endpoint separado)
   async function handleStopRecording() {
     const blob = await stop();
-    if (blob) {
-      await attachVideo(blob, `grabacion-${Date.now()}.webm`);
+    if (!blob) return;
+    setError(null);
+    setStatus('Subiendo grabación...');
+    try {
+      const durationSeconds = await getVideoDurationSeconds(blob);
+      if (durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
+        setError('La grabación supera la duración máxima de 30 minutos.');
+        setStatus(null);
+        return;
+      }
+      const url = await uploadFileToS3(blob, 'video', `grabacion-${Date.now()}.webm`);
+      await api.post(`/topics/${topicId}/screen-recording`, {
+        screenRecordingUrl: url,
+        videoDurationSeconds: durationSeconds,
+      });
+      setStatus('Grabación guardada correctamente.');
+      onChanged();
+    } catch (err: any) {
+      setError(err.response?.data?.message ?? 'No se pudo guardar la grabación.');
+    } finally {
+      setStatus(null);
     }
   }
 
@@ -91,12 +145,44 @@ export default function TopicMediaUploader({ topicId, hasVideo, onChanged }: Pro
     }
   }
 
+  // ── Delete handlers ───────────────────────────────────────────────────────
+
+  async function handleDeleteVideo() {
+    try {
+      await deleteTopicVideo(topicId);
+      onChanged();
+    } catch {
+      setError('No se pudo eliminar el video.');
+    }
+  }
+
+  async function handleDeleteScreenRecording() {
+    try {
+      await deleteTopicScreenRecording(topicId);
+      onChanged();
+    } catch {
+      setError('No se pudo eliminar la grabación.');
+    }
+  }
+
+  async function handleDeleteMaterial(materialId: string) {
+    try {
+      await deleteMaterial(topicId, materialId);
+      onChanged();
+    } catch {
+      setError('No se pudo eliminar el material.');
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <div className="mt-2 space-y-2 text-sm">
+      {/* ── Botones de acción ─────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
         {/* HU5 */}
         <label className="cursor-pointer text-slate-700 underline">
-          {hasVideo ? 'Reemplazar video (archivo)' : 'Subir video (archivo)'}
+          {videoUrl ? 'Reemplazar video (archivo)' : 'Subir video (archivo)'}
           <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={handleFileSelected} hidden />
         </label>
 
@@ -112,7 +198,7 @@ export default function TopicMediaUploader({ topicId, hasVideo, onChanged }: Pro
           </>
         ) : (
           <button onClick={start} className="text-slate-700 underline">
-            Grabar pantalla
+            {screenRecordingUrl ? 'Volver a grabar pantalla' : 'Grabar pantalla'}
           </button>
         )}
 
@@ -122,6 +208,72 @@ export default function TopicMediaUploader({ topicId, hasVideo, onChanged }: Pro
           <input type="file" accept=".pdf,.xlsx,.xls,.docx,.doc,.txt" onChange={handleMaterialSelected} hidden />
         </label>
       </div>
+
+      {/* ── Vista previa: video subido (HU5) ─────────────────────────────── */}
+      {videoUrl && (
+        <div className="border rounded p-2 space-y-1">
+          <p className="text-xs text-slate-500">Vista previa — video subido</p>
+          <video
+            src={videoUrl}
+            controls
+            className="w-full rounded"
+            style={{ maxHeight: '240px' }}
+          />
+          <button
+            type="button"
+            onClick={handleDeleteVideo}
+            className="flex items-center gap-1 text-xs text-red-600 underline"
+          >
+            <TrashIcon /> Eliminar video
+          </button>
+        </div>
+      )}
+
+      {/* ── Vista previa: grabación de pantalla (HU6) ────────────────────── */}
+      {screenRecordingUrl && (
+        <div className="border rounded p-2 space-y-1">
+          <p className="text-xs text-slate-500">Vista previa — grabación de pantalla</p>
+          <video
+            src={screenRecordingUrl}
+            controls
+            className="w-full rounded"
+            style={{ maxHeight: '240px' }}
+          />
+          <button
+            type="button"
+            onClick={handleDeleteScreenRecording}
+            className="flex items-center gap-1 text-xs text-red-600 underline"
+          >
+            <TrashIcon /> Eliminar video grabado
+          </button>
+        </div>
+      )}
+
+      {/* ── Vista previa: materiales adjuntos (HU7) ──────────────────────── */}
+      {materials.length > 0 && (
+        <div className="border rounded p-2 space-y-1">
+          <p className="text-xs text-slate-500">Material adjunto</p>
+          {materials.map((m) => (
+            <div key={m.id} className="flex items-center justify-between">
+              <a
+                href={m.fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-slate-700 underline truncate max-w-[70%]"
+              >
+                {m.fileName}
+              </a>
+              <button
+                type="button"
+                onClick={() => handleDeleteMaterial(m.id)}
+                className="flex items-center gap-1 text-xs text-red-600 underline ml-2 shrink-0"
+              >
+                <TrashIcon /> Eliminar archivo
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {status && <p className="text-slate-500">{status}</p>}
       {(error || recordError) && <p className="text-red-600">{error ?? recordError}</p>}
