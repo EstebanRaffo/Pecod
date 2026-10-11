@@ -1,0 +1,20 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": 1,
+      "label": "Enrollment bypass in findDetail",
+      "description": "CoursesService.findDetail generates presigned URLs for all topics unconditionally, then checks enrollment afterward. A non-enrolled student receives fully playable signed video and material URLs. Move the enrollment check before URL signing, or strip URL fields when isEnrolled is false.",
+      "confidence": "confirmed",
+      "severity": "blocking"
+    },
+    {
+      "id": 2,
+      "label": "findMine implicit coupling",
+      "description": "findMine returns course rows with no topic include, so no URLs leak today. If a topics include is added later, stored S3 URLs would appear unsigned and 403. Add a comment warning that any future topics include must pass through generatePresignedGetUrl.",
+      "confidence": "confirmed",
+      "severity": "advisory"
+    }
+  ],
+  "reviewDoc": "c:\\Users\\Asus\\Documents\\Informática\\Testing de Aplicaciones\\TPI\\pecod\\.agents\\tasks\\review.md"
+}

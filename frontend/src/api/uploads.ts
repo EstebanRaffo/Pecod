@@ -37,9 +37,18 @@ export function getVideoDurationSeconds(file: File | Blob): Promise<number> {
     video.preload = 'metadata';
     video.onloadedmetadata = () => {
       URL.revokeObjectURL(video.src);
-      resolve(Math.round(video.duration));
+      const duration = video.duration;
+      // Algunos MP4 reportan Infinity hasta que se carga el archivo completo
+      if (!isFinite(duration) || isNaN(duration)) {
+        resolve(0); // sin duración legible: el backend no valida límite de duración
+      } else {
+        resolve(Math.round(duration));
+      }
     };
-    video.onerror = () => reject(new Error('No se pudo leer la duración del video.'));
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      resolve(0); // si no se pueden leer metadatos, continuar sin duración
+    };
     video.src = URL.createObjectURL(file);
   });
 }

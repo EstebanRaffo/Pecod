@@ -47,7 +47,6 @@ export class TopicsController {
   ) {
     return this.topicsService.attachVideo(topicId, user, dto);
   }
-
   @Delete('topics/:topicId/video')
   @Roles(Role.PROFESSOR)
   deleteVideo(

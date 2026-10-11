@@ -9,6 +9,40 @@ import {
 } from '../api/uploads';
 import { useScreenRecorder } from '../hooks/useScreenRecorder';
 
+// ── Modal de confirmación ─────────────────────────────────────────────────────
+interface ConfirmDialogProps {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6 space-y-4">
+        <h3 className="text-base font-semibold text-slate-800">Confirmar eliminación</h3>
+        <p className="text-sm text-slate-600">{message}</p>
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm rounded border border-slate-300 text-slate-700 hover:bg-slate-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   topicId: string;
   videoUrl: string | null;
@@ -51,6 +85,27 @@ export default function TopicMediaUploader({
   const [error, setError] = useState<string | null>(null);
   const { isRecording, start, stop, cancel, error: recordError } = useScreenRecorder();
 
+  // ── Confirm dialog state ──────────────────────────────────────────────────
+  const [confirmDialog, setConfirmDialog] = useState<{
+    message: string;
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+
+  function askConfirm(message: string, action: () => Promise<void>) {
+    setConfirmDialog({ message, onConfirm: action });
+  }
+
+  async function handleConfirm() {
+    if (!confirmDialog) return;
+    const action = confirmDialog.onConfirm;
+    setConfirmDialog(null);
+    await action();
+  }
+
+  function handleCancel() {
+    setConfirmDialog(null);
+  }
+
   // ── Upload helpers ────────────────────────────────────────────────────────
 
   async function attachVideo(file: File | Blob, fileName: string) {
@@ -75,7 +130,7 @@ export default function TopicMediaUploader({
     }
   }
 
-  // HU5: carga de un video ya existente desde un archivo del dispositivo
+  // HU5 (carga de un video ya existente desde un archivo del dispositivo)
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -148,36 +203,59 @@ export default function TopicMediaUploader({
   // ── Delete handlers ───────────────────────────────────────────────────────
 
   async function handleDeleteVideo() {
-    try {
-      await deleteTopicVideo(topicId);
-      onChanged();
-    } catch {
-      setError('No se pudo eliminar el video.');
-    }
+    askConfirm(
+      '¿Estás seguro de que querés eliminar el video? Esta acción no se puede deshacer.',
+      async () => {
+        try {
+          await deleteTopicVideo(topicId);
+          onChanged();
+        } catch {
+          setError('No se pudo eliminar el video.');
+        }
+      },
+    );
   }
 
   async function handleDeleteScreenRecording() {
-    try {
-      await deleteTopicScreenRecording(topicId);
-      onChanged();
-    } catch {
-      setError('No se pudo eliminar la grabación.');
-    }
+    askConfirm(
+      '¿Estás seguro de que querés eliminar la grabación? Esta acción no se puede deshacer.',
+      async () => {
+        try {
+          await deleteTopicScreenRecording(topicId);
+          onChanged();
+        } catch {
+          setError('No se pudo eliminar la grabación.');
+        }
+      },
+    );
   }
 
   async function handleDeleteMaterial(materialId: string) {
-    try {
-      await deleteMaterial(topicId, materialId);
-      onChanged();
-    } catch {
-      setError('No se pudo eliminar el material.');
-    }
+    askConfirm(
+      '¿Estás seguro de que querés eliminar el archivo? Esta acción no se puede deshacer.',
+      async () => {
+        try {
+          await deleteMaterial(topicId, materialId);
+          onChanged();
+        } catch {
+          setError('No se pudo eliminar el material.');
+        }
+      },
+    );
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="mt-2 space-y-2 text-sm">
+      {/* ── Modal de confirmación ─────────────────────────────────────────── */}
+      {confirmDialog && (
+        <ConfirmDialog
+          message={confirmDialog.message}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
+      )}
       {/* ── Botones de acción ─────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
         {/* HU5 */}
