@@ -2,18 +2,24 @@
   "verdict": "CHANGES_REQUESTED",
   "findings": [
     {
-      "id": 1,
-      "label": "Enrollment bypass in findDetail",
-      "description": "CoursesService.findDetail generates presigned URLs for all topics unconditionally, then checks enrollment afterward. A non-enrolled student receives fully playable signed video and material URLs. Move the enrollment check before URL signing, or strip URL fields when isEnrolled is false.",
-      "confidence": "confirmed",
-      "severity": "blocking"
+      "id": "missing-alter-table-migration",
+      "severity": "blocking",
+      "summary": "contentText was added by editing migration_v1 SQL in place. Any already-initialized database lacks the column and will throw a Prisma runtime error on every PATCH that includes contentText. A new ALTER TABLE migration is required."
     },
     {
-      "id": 2,
-      "label": "findMine implicit coupling",
-      "description": "findMine returns course rows with no topic include, so no URLs leak today. If a topics include is added later, stored S3 URLs would appear unsigned and 403. Add a comment warning that any future topics include must pass through generatePresignedGetUrl.",
-      "confidence": "confirmed",
-      "severity": "advisory"
+      "id": "trailing-punctuation-in-urls",
+      "severity": "advisory",
+      "summary": "ReadingMaterialDisplay includes trailing punctuation (periods, commas, parentheses) in matched href values, producing broken links. Strip trailing punctuation with url.replace(/[.,;:!?)]+$/, '') before constructing the anchor."
+    },
+    {
+      "id": "save-failure-error-placement",
+      "severity": "advisory",
+      "summary": "handleSaveReading sets the shared error state which renders below video previews at the bottom of TopicMediaUploader, potentially below the fold. The error should appear inside the open editor panel adjacent to the Guardar/Cancelar buttons."
+    },
+    {
+      "id": "contenttext-not-explicit-in-exclusion-path",
+      "severity": "advisory",
+      "summary": "getContent returns all topic columns for enrolled students without explicitly handling contentText. If a preview for unenrolled students is ever added, contentText will be exposed. Consider adding it to the strip-down block in findDetail for unenrolled users."
     }
   ],
   "reviewDoc": "c:\\Users\\Asus\\Documents\\Informática\\Testing de Aplicaciones\\TPI\\pecod\\.agents\\tasks\\review.md"

@@ -1,8 +1,8 @@
-# Presigned GET URLs for private S3 files
+# Material de Lectura — inline editor for topic reading material
 
-S3 objects previously stored as public-read are now private. The `ACL: 'public-read'` option has been removed from `PutObjectCommand`, and a new `generatePresignedGetUrl` method on `UploadsService` issues time-limited signed GET URLs. `CoursesService.findDetail` and `TopicsService.getContent` — the two read paths that return topic/material URLs — now replace every stored URL with a fresh presigned one before sending the response. `UploadsModule` is exported and imported by both `TopicsModule` and `CoursesModule` to make the service available.
+The change adds a fourth action to the topic editor allowing professors to write free-form text and paste external documentation links, stored as `contentText` on the `topics` table. The implementation spans a new optional field in the Prisma schema (included in the initial migration SQL rather than as a separate `ALTER TABLE`), a `@MaxLength(50000)` DTO guard, a service patch, and a React inline editor with cancel confirmation. The design is consistent with the existing video/material action pattern.
 
-Watch for: the key-extraction regex uses `https?` but the URL builder in `requestUploadUrl` hardcodes `https://`, so the `http` branch is dead — not a bug, but worth noting. More importantly, `findDetail` exposes presigned URLs to unauthenticated or non-enrolled students because it runs the URL replacement unconditionally before checking enrollment status — **confirmed**. Also, the `catalog` endpoint and `findMine` return raw stored URLs without presigning, which would 403 if those fields are ever rendered — **confirmed** for `findMine`, which includes the full course row.
+Watch for: **(1)** the schema change bypassed the migration system by editing `migration_v1` SQL in place, leaving any already-initialized database without the column (confirmed, blocking); **(2)** `ReadingMaterialDisplay` includes trailing punctuation in matched URLs, producing broken `href` values — e.g., `https://docs.example.com.` with a trailing period (confirmed, advisory); **(3)** save-failure errors surface at the bottom of the container, not inside the editor panel where the professor's focus is (confirmed, advisory).
 
 **Verdict**: NEEDS_CHANGES
 
@@ -10,72 +10,45 @@ Watch for: the key-extraction regex uses `https?` but the URL builder in `reques
 
 ## High-level view
 
-The key-extraction regex (`url.replace(/^https?:\/\/[^/]+\//, '')`) correctly strips the scheme and host from the canonical S3 URL format (`https://<bucket>.s3.<region>.amazonaws.com/<key>`), leaving just the relative key. This works for all URLs produced by `requestUploadUrl` since they follow exactly that format. The `http?` variant is theoretically unnecessary but harmless.
+The `contentText` field is correctly included in the professor-facing `findDetail` query, pre-loaded into the draft on editor open, and persisted via `PATCH /topics/:topicId` which is gated behind `@Roles(Role.PROFESSOR)` and ownership checks. The cancel path compares `draftReading` against `contentText ?? ''` before deciding whether to show the confirmation dialog — correct behavior.
 
-`findDetail` in `CoursesService` transforms URLs for all topics before the enrollment gate. A student who is not enrolled still receives presigned, playable URLs for every topic in the course — the enrollment check only toggles the `isEnrolled` flag and does not prevent the URL conversion from running.
+The schema change was made by editing the initial `migration_v1` SQL file in place. Any database already initialized from that migration does not have the `contentText` column and will fail at runtime with a Prisma error on every `PATCH` that includes `contentText`. A separate `ALTER TABLE` migration is the required fix.
 
-`catalog` and `findMine` skip URL replacement entirely. `catalog` selects no URL fields, so it is not affected. `findMine` returns full course rows and does not include topic or material URL fields (topics are not `include`d), so it is also safe for now — but the coupling is implicit and would break silently if a `topics` include were added later.
+`ReadingMaterialDisplay` uses `/https?:\/\/[^\s]+/g` and renders each match directly as `<a href={url}>`. The regex does not strip trailing punctuation, so a URL written as `See https://docs.example.com.` produces an anchor pointing to `https://docs.example.com.` (broken). React's JSX sanitizes `javascript:` URIs implicitly since 16.9, so there is no active XSS vector, but the implementation depends on that implicit guarantee rather than an explicit scheme check.
 
-The `generatePresignedGetUrl` signature defaults to 3600 seconds (1 hour). That means a URL embedded in a page response stays valid for up to an hour after the tab is closed; acceptable for this use case but worth knowing if tighter expiry is ever required.
+`getContent` in `topics.service.ts` uses an unscoped `include` that returns all columns, so enrolled students receive `contentText` via `GET /topics/:topicId`. If the intent is to gate reading material the same way video URLs are gated in `findDetail`, no such exclusion exists on this path.
 
 ---
 
 <details>
-<summary>Issues (2)</summary>
+<summary>Issues (4)</summary>
 
-1. **Enrollment bypass in `findDetail`** — `CoursesService.findDetail` generates presigned URLs for all topics unconditionally, then checks enrollment afterward. A non-enrolled student who calls the course detail endpoint receives fully playable, signed video and material URLs. Move the enrollment check (or at minimum the URL transformation) so that URL signing only happens after access has been confirmed, or strip URL fields from the response when `isEnrolled` is false.
+1. **Missing ALTER TABLE migration** — `contentText` was added by editing `migration_v1` SQL in place. Existing databases won't have the column; `PATCH /topics/:topicId` with `contentText` will throw a Prisma runtime error. Add `ALTER TABLE "topics" ADD COLUMN "contentText" TEXT;` as a new migration file. (blocking)
 
-2. **`findMine` implicit coupling** — `CoursesService.findMine` returns the raw Prisma course row without topics. This is safe today because topics are not included. If a `topics: { include: { materials: true } }` is ever added (e.g. for a richer professor dashboard), stored S3 URLs would leak into the response without presigning, and the objects would 403. Add a comment to `findMine` noting that any future `topics` include must go through `generatePresignedGetUrl`, or centralize the URL-replacement logic so it applies automatically.
+2. **Trailing punctuation in matched URLs** — the `https?://[^\s]+` regex includes trailing `.`, `)`, `,` etc. in the `href`. Strip trailing punctuation before constructing the anchor: `url.replace(/[.,;:!?)]+$/, '')`. (advisory)
+
+3. **Save-failure error not displayed inside editor panel** — `handleSaveReading` sets the shared `error` state which renders at the bottom of `TopicMediaUploader`, potentially below the fold. The error message should appear adjacent to the Guardar/Cancelar buttons inside the open editor. (advisory)
+
+4. **`contentText` not in explicit exclusion path for future access widening** — `getContent` returns all columns for enrolled users, so `contentText` is accessible to students. This is likely intentional, but it is not explicitly handled. If a topic preview for unenrolled students is ever added, `contentText` will leak without a code change. Consider adding it to the strip-down block in `findDetail` for unenrolled users to make the intent explicit. (advisory)
 
 </details>
-
----
 
 <details>
 <summary>Details</summary>
 
-### Key extraction and URL format contract
+### Missing migration for `contentText`
 
-`requestUploadUrl` constructs the stored URL as:
+The `contentText TEXT` column appears inside `backend/prisma/migrations/20260924000109_migration_v1/migration.sql`, the initial table creation script. The migrations directory contains exactly two entries (`migration_v1` and `add_screen_recording_url`), neither of which adds `contentText` via `ALTER TABLE`. A database initialized before this commit has no `contentText` column; `prisma migrate deploy` will not add it because Prisma considers `migration_v1` already applied. The fix is a new migration file with `ALTER TABLE "topics" ADD COLUMN "contentText" TEXT;`.
 
-```
-https://<bucket>.s3.<region>.amazonaws.com/<kind>/<uuid>-<filename>
-```
+### Trailing punctuation in rendered URLs
 
-The extraction regex `url.replace(/^https?:\/\/[^/]+\//, '')` removes everything up to and including the first `/` after the host, leaving `<kind>/<uuid>-<filename>` as the key. That matches exactly what S3 expects. The `http` alternative in the regex is unreachable (the builder always emits `https`), but it causes no harm.
+`ReadingMaterialDisplay` matches `/https?:\/\/[^\s]+/g` and passes the raw match as `href`. Natural prose like `Documentación: https://docs.example.com.` or `(ver https://example.com/page)` produces `href="https://docs.example.com."` and `href="https://example.com/page)"` respectively — both are broken links. Adding a trailing-punctuation strip (`url.replace(/[.,;:!?)]+$/, '')`) before constructing the anchor fixes this without changing the display text.
 
-One edge case worth checking: if a filename contains `%`-encoded characters (e.g. `Instalaci%C3%B3n`) the key string is preserved as-is and passed to `GetObjectCommand`. S3 SDK v3 does not double-encode keys, so this is correct — the stored key already has the encoded form since it was derived from the original filename at upload time.
+React's JSX does block `javascript:` URIs as of React 16.9 (`Blocked attribute href for an anchor tag`), so there is no active XSS path, but the code has no explicit scheme validation. An explicit `startsWith('http://') || startsWith('https://')` guard makes the safety contract explicit and removes reliance on React's internal sanitization.
 
-### Enrollment bypass in `findDetail` — confirmed
+### Save-failure error placement
 
-```typescript
-// courses.service.ts — findDetail
-const topics = await Promise.all(
-  course.topics.map(async (topic) => {
-    const videoUrl = topic.videoUrl
-      ? await this.uploadsService.generatePresignedGetUrl(urlToKey(topic.videoUrl))
-      : topic.videoUrl;
-    // ...
-  }),
-);
-
-// enrollment check happens here, AFTER topics are signed
-let isEnrolled = false;
-if (user.role === Role.STUDENT) {
-  const enrollment = await this.prisma.enrollment.findUnique({ ... });
-  isEnrolled = !!enrollment;
-}
-
-return { ...course, topics, isEnrolled };
-```
-
-The signed `topics` array — including video and material URLs — is always present in the response regardless of `isEnrolled`. A non-enrolled student can call `GET /courses/:id` and receive valid, playable signed URLs for every video in the course. The `isEnrolled: false` flag is only meaningful if the frontend chooses to hide the content; the backend provides no enforcement here.
-
-The fix is to either replace URL fields with `null` when `isEnrolled` is false, or to restructure `findDetail` so the URL transformation only runs for enrolled users (or professors).
-
-### `findMine` implicit coupling
-
-`findMine` issues a bare `findMany` with no `include`. Since the Prisma schema puts `videoUrl` and `screenRecordingUrl` on `Topic`, not on `Course`, and topics are not included, no URL fields appear in the response. The risk is that a future developer adds `include: { topics: { include: { materials: true } } }` to enrich the professor's course list without knowing about the presigning requirement. Adding a comment is a low-cost safeguard.
+`handleSaveReading` on error calls `setError(err.response?.data?.message ?? 'No se pudo guardar...')`. The error is rendered by a `<p className="text-red-600">` at the very end of `TopicMediaUploader`'s JSX, below video previews and material attachments. A professor editing a topic partway down a long course list will not see it without scrolling. The error should render inside the `readingOpen` panel, adjacent to the action buttons.
 
 </details>
 
@@ -84,13 +57,18 @@ The fix is to either replace URL fields with `null` when `isEnrolled` is false, 
 <details>
 <summary>File map</summary>
 
-- `src/uploads/uploads.service.ts` — added `generatePresignedGetUrl(key, expiresIn)` using `GetObjectCommand`; removed `ACL: 'public-read'` from `PutObjectCommand`
-- `src/uploads/uploads.module.ts` — added `exports: [UploadsService]`
-- `src/topics/topics.service.ts` — injected `UploadsService`; `getContent` replaces videoUrl, screenRecordingUrl, and each material's fileUrl with presigned GET URLs
-- `src/topics/topics.module.ts` — added `UploadsModule` to imports
-- `src/courses/courses.service.ts` — injected `UploadsService`; `findDetail` replaces all topic and material URLs with presigned GET URLs (before the enrollment gate — see Issues)
-- `src/courses/courses.module.ts` — added `UploadsModule` to imports
+| File | Change |
+|---|---|
+| `backend/prisma/schema.prisma` | Added `contentText String?` to `Topic` model |
+| `backend/prisma/migrations/20260924000109_migration_v1/migration.sql` | Edited in-place to include `contentText` column (no separate migration created) |
+| `backend/src/topics/dto/update-topic.dto.ts` | Added optional `contentText` with `@MaxLength(50000)` |
+| `backend/src/topics/topics.service.ts` | Added `contentText` to the conditional update spread |
+| `backend/src/topics/topics.service.spec.ts` | Three unit tests for `contentText` update authorization and empty-string acceptance |
+| `backend/src/courses/courses.service.ts` | Added `contentText` to `findDetail` topic select |
+| `frontend/src/pages/CourseEditorPage.tsx` | Added `contentText` to `Topic` interface; passes it to `TopicMediaUploader` |
+| `frontend/src/components/TopicMediaUploader.tsx` | Fourth action button, inline editor, cancel confirmation, `ReadingMaterialDisplay`, `ConfirmDialog` parameterization |
+| `frontend/cypress/e2e/reading-material.cy.ts` | E2E tests covering button visibility, editor open, cancel confirmation, save with link rendering |
 
-Full diff: `git diff main -- backend/src/uploads backend/src/topics backend/src/courses`
+Full diff: `git diff a469711..HEAD`
 
 </details>

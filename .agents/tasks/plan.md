@@ -1,222 +1,400 @@
-# Implementation Plan — Topic Media Previews with Delete Actions
+# Implementation Plan — "Material de Lectura" (cuarta acción por tema)
 
-## Findings from codebase exploration
+## Hallazgos de exploración
 
-**Q1 — Separate fields for uploaded-video vs screen-recording URL?**
-No. `schema.prisma` has a single `videoUrl String?` on the `Topic` model. Both HU5 (upload file) and HU6 (screen recording) call the same `POST /topics/:topicId/video` endpoint and overwrite the same field. A new `screenRecordingUrl String?` column must be added so the two kinds of video coexist on a topic. DB is PostgreSQL (`datasource db { provider = "postgresql" }`). A migration must be run separately; the plan only edits `schema.prisma` and notes the command.
+**Modelo Topic** — `backend/prisma/schema.prisma` tiene el modelo `Topic` con los campos
+`videoUrl String?`, `screenRecordingUrl String?`, `contentText String?`, y `materials Material[]`.
+El campo `contentText` (material teórico escrito) **ya existe** en el esquema. No se necesita
+agregar un nuevo campo: se reutiliza `contentText` como campo de almacenamiento del
+"Material de Lectura". Esto es coherente con el comentario existente
+`// material teórico escrito (HU7)`.
 
-**Q2 — Does `findDetail` include materials per topic?**
-No. `courses.service.ts` → `findDetail` uses `select: { id, title, order, videoUrl }`. Materials are never returned, so the `Topic` type in `CourseEditorPage.tsx` has no `materials` property. Both the service and the frontend type must be updated.
+**`findDetail` en CoursesService** — `courses.service.ts` ya hace `select` incluyendo
+`screenRecordingUrl: true` y `materials: true` dentro de `topics`. Falta agregar
+`contentText: true` al mismo select para que el dato llegue al frontend.
 
-**Q3 — Missing DELETE endpoints?**
-The topics controller has no DELETE methods. Three endpoints are missing:
-- `DELETE /topics/:topicId/video` — clear `videoUrl` and `videoDurationSeconds`
-- `DELETE /topics/:topicId/screen-recording` — clear `screenRecordingUrl`
-- `DELETE /topics/:topicId/materials/:materialId` — delete a Material row
+**Endpoint de actualización de topic** — existe `PATCH /topics/:topicId` en
+`topics.controller.ts` que llama a `topicsService.updateTopic`. El servicio actualmente
+sólo escribe `title` y `order`. Se extiende para manejar `contentText`.
 
-**Q4 — Delete functions in `uploads.ts`?**
-`uploads.ts` has no delete functions. Two API-call helpers must be added (they call the new backend endpoints; S3 cleanup is the backend's responsibility).
+**DTO `UpdateTopicDto`** — `update-topic.dto.ts` sólo tiene `title?` y `order?`.
+Se agrega `contentText?: string`.
 
-**Q5 — UI changes needed?**
-`TopicMediaUploader.tsx` currently accepts only `topicId`, `hasVideo`, and `onChanged`. It knows nothing about screen-recording URLs or materials. It must receive the full topic media state and render three conditional preview blocks plus delete buttons. `CourseEditorPage.tsx` must pass the new props and update its local `Topic` type to include `screenRecordingUrl` and `materials`.
+**Frontend** — La página `/profesor/cursos/:id` es `CourseEditorPage.tsx`. Las tres
+acciones existentes están en `TopicMediaUploader.tsx`. La cuarta acción se agrega en ese
+mismo componente, siguiendo exactamente el mismo estilo Tailwind/inline que las demás.
+
+**API client** — `api` es un Axios con `baseURL = VITE_API_URL ?? 'http://localhost:3000/api'`
+e interceptor JWT. Se usa directamente con `api.patch(...)` para guardar.
+
+**UI library** — sólo Tailwind CSS. No hay MUI ni Chakra. El modal de confirmación ya
+existe como componente `ConfirmDialog` en `TopicMediaUploader.tsx`; se reutiliza.
+
+**Tests backend** — `topics.service.spec.ts` usa Jest + mocks de Prisma vía
+`createMockPrismaService()`. Se añade un bloque `describe` nuevo para `updateContentText`.
+
+**Tests frontend** — hay Cypress e2e en `frontend/cypress/e2e/`. No hay tests unitarios de
+componentes. Se agrega un test Cypress e2e para el flujo completo.
 
 ---
 
-## Step-by-step plan
+## Plan paso a paso
 
-- [ ] 1. Add `screenRecordingUrl` field to the Topic model in `schema.prisma`.
-      Add `screenRecordingUrl  String?  // S3 key/URL del video de grabación de pantalla (HU6)` on the line after `videoUrl`. Do NOT run the migration — the team runs it separately. Leave a comment in the file: `// MIGRATION PENDING: npx prisma migrate dev --name add_screen_recording_url`.
-      Files: `c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend\prisma\schema.prisma`
-      Verify: `cd c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend && npm run build` — NestJS/TypeScript compile succeeds (Prisma client still compiles against the old generated types; a fresh `prisma generate` is needed before running the app, but the build check is sufficient here).
+- [ ] 1. Agregar `contentText` al select de `findDetail` en CoursesService.
+      En `courses.service.ts`, dentro del `include: { topics: { ... select: { ... } } }`,
+      el select actual incluye `id`, `title`, `order`, `videoUrl`, `screenRecordingUrl`,
+      `materials`. Agregar `contentText: true` al mismo objeto de select para que el dato
+      llegue al frontend cuando carga la página del curso.
+      Files: `backend/src/courses/courses.service.ts`
+      Verify: `cd backend && npm run build` — compila sin errores.
 
-- [ ] 2. Run `prisma generate` so the Prisma client types include `screenRecordingUrl`.
-      This step regenerates `@prisma/client` from the updated schema so TypeScript picks up the new field in all subsequent backend steps.
-      Files: (generated, not edited manually)
-      Verify: `cd c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend && npx prisma generate` — exits with code 0 and prints "Generated Prisma Client".
-
-- [ ] 3. Update `TopicsService` to handle `screenRecordingUrl` and to add the three delete methods.
-      In `topics.service.ts`:
-      - Change `attachVideo` to write only `videoUrl`/`videoDurationSeconds` (no change in logic, but confirm it does NOT touch `screenRecordingUrl`).
-      - Add `attachScreenRecording(topicId, professor, dto)` — updates `screenRecordingUrl` on the topic. Reuse the same `getOwnedTopicOrThrow` guard.
-      - Add `deleteVideo(topicId, professor)` — sets `videoUrl: null` and `videoDurationSeconds: null`.
-      - Add `deleteScreenRecording(topicId, professor)` — sets `screenRecordingUrl: null`.
-      - Add `deleteMaterial(topicId, materialId, professor)` — verifies ownership via `getOwnedTopicOrThrow`, then calls `prisma.material.delete({ where: { id: materialId } })`. Throw `NotFoundException` if the material does not exist or does not belong to the topic.
-      Files: `c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend\src\topics\topics.service.ts`
-      Verify: `cd c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend && npm run test -- --testPathPattern=topics` — all existing tests pass (new methods are additions, not replacements).
-
-- [ ] 4. Create `AttachScreenRecordingDto` for the new endpoint.
-      Create `attach-screen-recording.dto.ts` in the dto folder. It is identical in structure to `AttachVideoDto` (same `videoUrl`/`videoDurationSeconds` fields, same validators) but named `screenRecordingUrl` instead of `videoUrl`. Add field `screenRecordingUrl: string` with `@IsNotEmpty()` and `videoDurationSeconds: number` with the same validators as `AttachVideoDto`.
-      Files: `c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend\src\topics\dto\attach-screen-recording.dto.ts`
-      Verify: `cd c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend && npm run build` — compiles without errors.
-
-- [ ] 5. Expose the new endpoints in `TopicsController`.
-      Add the following routes (all `@Roles(Role.PROFESSOR)`, all guarded by existing `JwtAuthGuard`/`RolesGuard`):
-      - `DELETE topics/:topicId/video` → `topicsService.deleteVideo(topicId, user)` — import `Delete` from `@nestjs/common`.
-      - `DELETE topics/:topicId/screen-recording` → `topicsService.deleteScreenRecording(topicId, user)`.
-      - `DELETE topics/:topicId/materials/:materialId` → `topicsService.deleteMaterial(topicId, materialId, user)`.
-      Also add `POST topics/:topicId/screen-recording` → `topicsService.attachScreenRecording(topicId, user, dto)` using `AttachScreenRecordingDto`. (The frontend already handles the upload to S3 via the same `uploadFileToS3` function; this endpoint just persists the URL, mirroring how `POST topics/:topicId/video` works today.)
-      Import `Delete` alongside the existing `Body, Controller, Get, Param, Patch, Post, UseGuards`.
-      Files: `c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend\src\topics\topics.controller.ts`
-      Verify: `cd c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend && npm run build` — NestJS build passes.
-
-- [ ] 6. Update `findDetail` in `CoursesService` to include materials for each topic.
-      Change the `topics` select clause from a bare `select` to an `include` (or add `include: { materials: true }` inside the existing select). The exact change:
-      Replace:
+- [ ] 2. Agregar `readingMaterial?: string` a `UpdateTopicDto`.
+      En `update-topic.dto.ts` agregar:
       ```ts
-      select: { id: true, title: true, order: true, videoUrl: true }
+      @IsOptional()
+      @IsString()
+      contentText?: string;
       ```
-      With:
+      Importar `IsString` ya está; `IsOptional` también. No cambiar imports.
+      Files: `backend/src/topics/dto/update-topic.dto.ts`
+      Verify: `cd backend && npm run build` — compila sin errores.
+
+- [ ] 3. Extender `updateTopic` en TopicsService para persistir `contentText`.
+      En `topics.service.ts`, dentro de `updateTopic`, agregar al objeto `data` del
+      `prisma.topic.update` el manejo de `contentText`:
       ```ts
-      select: { id: true, title: true, order: true, videoUrl: true, screenRecordingUrl: true, materials: true }
+      ...(dto.contentText !== undefined ? { contentText: dto.contentText } : {}),
       ```
-      This returns all material rows for each topic so the frontend can display them without an additional request.
-      Files: `c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend\src\courses\courses.service.ts`
-      Verify: `cd c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\backend && npm run build` — build passes.
+      El valor vacío (`''`) es válido (el profesor puede borrar el contenido). No se
+      valida longitud mínima en el backend — el campo es `String?` y acepta vacío.
+      Files: `backend/src/topics/topics.service.ts`
+      Verify: `cd backend && npm run test -- --testPathPattern=topics` — todos los tests
+      existentes pasan.
 
-- [ ] 7. Add delete API helper functions to `uploads.ts` on the frontend.
-      Add three exported async functions that call `api.delete(...)`:
+- [ ] 4. Agregar tests unitarios a `topics.service.spec.ts` para `updateTopic` con `contentText`.
+      Agregar un `describe('updateTopic — contentText')` con estos casos:
+      - CA: el Profesor dueño puede guardar texto en `contentText` — mock de
+        `topic.findUnique` retorna `{ id: 'topic-1', course: { professorId: 'prof-1' } }`;
+        mock de `topic.update` retorna `{ id: 'topic-1', contentText: 'texto de lectura' }`;
+        verificar que `prisma.topic.update` fue llamado con
+        `data: expect.objectContaining({ contentText: 'texto de lectura' })`.
+      - CA: un Profesor de otro curso no puede guardar `contentText` — mock retorna
+        `{ course: { professorId: 'otro-profesor' } }`; esperar `ForbiddenException`.
+      - CA: guardar `contentText` vacío (`''`) es aceptado — verificar que `topic.update`
+        es llamado con `{ contentText: '' }` sin lanzar error.
+      Files: `backend/src/topics/topics.service.spec.ts`
+      Verify: `cd backend && npm run test -- --testPathPattern=topics` — todos los tests
+      (incluyendo los nuevos) pasan.
+
+- [ ] 5. Actualizar el tipo `Topic` en `CourseEditorPage.tsx` para incluir `contentText`.
+      En la interfaz `Topic` de `CourseEditorPage.tsx` agregar el campo:
       ```ts
-      export async function deleteTopicVideo(topicId: string): Promise<void> {
-        await api.delete(`/topics/${topicId}/video`);
-      }
-      export async function deleteTopicScreenRecording(topicId: string): Promise<void> {
-        await api.delete(`/topics/${topicId}/screen-recording`);
-      }
-      export async function deleteMaterial(topicId: string, materialId: string): Promise<void> {
-        await api.delete(`/topics/${topicId}/materials/${materialId}`);
-      }
+      contentText?: string | null;
       ```
-      No new libraries needed — `api` is the existing Axios instance from `./client`.
-      Files: `c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\frontend\src\api\uploads.ts`
-      Verify: `cd c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\frontend && npm run build` — TypeScript + Vite build passes.
+      Luego, pasar el nuevo prop a `<TopicMediaUploader>`:
+      ```tsx
+      <TopicMediaUploader
+        topicId={topic.id}
+        videoUrl={topic.videoUrl ?? null}
+        screenRecordingUrl={topic.screenRecordingUrl ?? null}
+        materials={topic.materials ?? []}
+        contentText={topic.contentText ?? null}
+        onChanged={loadCourse}
+      />
+      ```
+      Files: `frontend/src/pages/CourseEditorPage.tsx`
+      Verify: Build puede fallar hasta que el paso 6 actualice el componente; ejecutar la
+      verificación al finalizar el paso 6.
 
-- [ ] 8. Update the `Topic` type and `TopicMediaUploader` props in `CourseEditorPage.tsx`.
-      In `CourseEditorPage.tsx`:
-      - Extend the `Topic` interface to add `screenRecordingUrl?: string | null` and `materials?: Material[]`.
-      - Add a `Material` interface: `{ id: string; fileName: string; fileUrl: string; fileType: string; }`.
-      - Pass the new fields as props to `<TopicMediaUploader>`: replace the current `hasVideo={!!topic.videoUrl}` call with:
-        ```tsx
-        <TopicMediaUploader
-          topicId={topic.id}
-          videoUrl={topic.videoUrl ?? null}
-          screenRecordingUrl={topic.screenRecordingUrl ?? null}
-          materials={topic.materials ?? []}
-          onChanged={loadCourse}
-        />
-        ```
-      - Remove the `{topic.videoUrl && <span className="...">Con video</span>}` badge — the preview inside the uploader makes it redundant.
-      Files: `c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\frontend\src\pages\CourseEditorPage.tsx`
-      Verify: `cd c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\frontend && npm run build` — may fail until step 9 updates the component signature; that is expected. Run the build check only after step 9.
+- [ ] 6. Agregar la cuarta acción "Material de Lectura" a `TopicMediaUploader.tsx`.
+      Este es el cambio principal de UI. A continuación se especifica cada parte:
 
-- [ ] 9. Rewrite `TopicMediaUploader.tsx` props interface and add the three preview+delete blocks.
-      **Props interface** — replace the current `Props`:
+      **6a — Actualizar la interfaz `Props`**: agregar `contentText: string | null`.
       ```ts
       interface Props {
         topicId: string;
         videoUrl: string | null;
         screenRecordingUrl: string | null;
         materials: Array<{ id: string; fileName: string; fileUrl: string; fileType: string }>;
+        contentText: string | null;        // ← nuevo
         onChanged: () => void;
       }
       ```
-      The `hasVideo` prop is removed; derive it from `videoUrl !== null`.
 
-      **Import** the three new delete helpers from `../api/uploads`:
+      **6b — Agregar estado local** para el editor de lectura. Añadir los siguientes
+      `useState` al inicio del componente (junto a los existentes `status`, `error`, etc.):
       ```ts
-      import { getVideoDurationSeconds, uploadFileToS3, deleteTopicVideo, deleteTopicScreenRecording, deleteMaterial } from '../api/uploads';
+      // Estado del editor de Material de Lectura
+      const [readingOpen, setReadingOpen] = useState(false);
+      const [draftReading, setDraftReading] = useState('');
+      const [savingReading, setSavingReading] = useState(false);
       ```
 
-      **Screen-recording upload wiring** — The `handleStopRecording` function currently calls `attachVideo`. Change it to call a new `attachScreenRecording` helper that POSTs to `/topics/${topicId}/screen-recording` (same shape as `attachVideo` but different endpoint). Add this helper inside the component (it does not need to be in `uploads.ts` since it is a topic-domain call, not an S3 call — use `api.post` directly, mirroring the existing `attachVideo` inline call).
+      **6c — Función `handleSaveReading`**: guarda mediante `api.patch` y llama `onChanged`.
+      Importar `api` desde `'../api/client'` (ya está importado). Agregar:
+      ```ts
+      async function handleSaveReading() {
+        setSavingReading(true);
+        setError(null);
+        try {
+          await api.patch(`/topics/${topicId}`, { contentText: draftReading });
+          setReadingOpen(false);
+          onChanged();
+        } catch (err: any) {
+          setError(err.response?.data?.message ?? 'No se pudo guardar el material de lectura.');
+        } finally {
+          setSavingReading(false);
+        }
+      }
+      ```
 
-      **Three preview blocks** — render them between the action buttons row and the status/error lines. Use Tailwind classes consistent with the rest of the page (`border rounded`, `text-sm`, `text-slate-700`, `text-slate-500`, `underline`, `text-red-600`):
+      **6d — Función `handleCancelReading`**: si el borrador difiere del valor guardado,
+      usar el `ConfirmDialog` existente; si son iguales, cerrar directamente.
+      ```ts
+      function handleCancelReading() {
+        const saved = contentText ?? '';
+        if (draftReading !== saved) {
+          askConfirm(
+            '¿Descartás los cambios en el Material de Lectura?',
+            async () => { setReadingOpen(false); },
+          );
+        } else {
+          setReadingOpen(false);
+        }
+      }
+      ```
 
-      **Preview 1 — uploaded video (`videoUrl`):**
+      **6e — Botón de apertura**: agregar como cuarta acción en el `<div className="flex flex-wrap items-center gap-3">`, luego del botón "Agregar material":
       ```tsx
-      {videoUrl && (
-        <div className="mt-2 border rounded p-2 space-y-1">
-          <p className="text-xs text-slate-500">Vista previa — video subido</p>
-          <video src={videoUrl} controls className="w-full rounded" style={{ maxHeight: '240px' }} />
-          <button
-            type="button"
-            onClick={handleDeleteVideo}
-            className="flex items-center gap-1 text-xs text-red-600 underline"
-          >
-            <TrashIcon /> Eliminar video
-          </button>
+      {/* HU nueva: Material de Lectura */}
+      <button
+        type="button"
+        onClick={() => {
+          setDraftReading(contentText ?? '');
+          setReadingOpen(true);
+        }}
+        className="text-slate-700 underline"
+      >
+        Material de Lectura
+      </button>
+      ```
+
+      **6f — Panel de edición**: agregar inmediatamente después del bloque de botones de
+      acción (`</div>`) y antes de los bloques de preview de video. Se muestra cuando
+      `readingOpen === true`:
+      ```tsx
+      {readingOpen && (
+        <div className="mt-2 border rounded p-3 space-y-2">
+          <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
+          <textarea
+            autoFocus
+            rows={6}
+            value={draftReading}
+            onChange={(e) => setDraftReading(e.target.value)}
+            placeholder="Escribí el texto del material de lectura. Podés pegar links externos (ej: https://docs.example.com)."
+            className="w-full border border-slate-300 rounded px-3 py-2 text-sm resize-y"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleSaveReading}
+              disabled={savingReading}
+              className="bg-slate-800 text-white px-3 py-2 rounded text-sm disabled:opacity-50"
+            >
+              {savingReading ? 'Guardando...' : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancelReading}
+              disabled={savingReading}
+              className="border border-slate-300 px-3 py-2 rounded text-sm disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
       ```
 
-      **Preview 2 — screen recording (`screenRecordingUrl`):**
-      Same structure as Preview 1 but reads from `screenRecordingUrl`, label is "Vista previa — grabación de pantalla", and the delete handler calls `handleDeleteScreenRecording`.
-
-      **Preview 3 — materials list:**
+      **6g — Vista de display** (cuando `readingOpen === false` y hay contenido guardado):
+      Agregar inmediatamente después del bloque `{readingOpen && ...}` anterior. Muestra el
+      texto guardado con URLs convertidas en `<a target="_blank">`. Si no hay contenido
+      guardado, no mostrar nada (el botón "Material de Lectura" es suficiente indicador).
       ```tsx
-      {materials.length > 0 && (
-        <div className="mt-2 border rounded p-2 space-y-1">
-          <p className="text-xs text-slate-500">Material adjunto</p>
-          {materials.map((m) => (
-            <div key={m.id} className="flex items-center justify-between">
-              <a href={m.fileUrl} target="_blank" rel="noreferrer"
-                 className="text-xs text-slate-700 underline truncate max-w-[70%]">
-                {m.fileName}
-              </a>
-              <button
-                type="button"
-                onClick={() => handleDeleteMaterial(m.id)}
-                className="flex items-center gap-1 text-xs text-red-600 underline ml-2 shrink-0"
-              >
-                <TrashIcon /> Eliminar
-              </button>
-            </div>
-          ))}
+      {!readingOpen && contentText && (
+        <div className="mt-2 border rounded p-3 space-y-1">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
+            <button
+              type="button"
+              onClick={() => { setDraftReading(contentText ?? ''); setReadingOpen(true); }}
+              className="text-xs text-slate-500 underline"
+            >
+              Editar
+            </button>
+          </div>
+          <div className="text-sm text-slate-700 whitespace-pre-wrap break-words">
+            <ReadingMaterialDisplay text={contentText} />
+          </div>
         </div>
       )}
       ```
 
-      **`TrashIcon` inline SVG** — add a small inline SVG component at the top of the file (no new library):
+      **6h — Componente `ReadingMaterialDisplay`**: renderiza texto plano con URLs
+      detectadas automáticamente como `<a target="_blank" rel="noopener noreferrer">`.
+      No usar librería externa — implementar con un regex simple. Agregar como función
+      auxiliar en el mismo archivo, **antes** del componente `TopicMediaUploader`:
       ```tsx
-      function TrashIcon() {
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-        );
+      /**
+       * Detecta URLs en `text` y las envuelve en <a target="_blank">.
+       * Regex: http(s):// seguido de caracteres no-espacio.
+       */
+      function ReadingMaterialDisplay({ text }: { text: string }) {
+        const urlRegex = /https?:\/\/[^\s]+/g;
+        const parts: React.ReactNode[] = [];
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+
+        while ((match = urlRegex.exec(text)) !== null) {
+          if (match.index > lastIndex) {
+            parts.push(text.slice(lastIndex, match.index));
+          }
+          const url = match[0];
+          parts.push(
+            <a
+              key={match.index}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline break-all"
+            >
+              {url}
+            </a>,
+          );
+          lastIndex = match.index + url.length;
+        }
+        if (lastIndex < text.length) {
+          parts.push(text.slice(lastIndex));
+        }
+        return <>{parts}</>;
       }
       ```
 
-      **Delete handlers** — add three async handlers inside the component, each calling the corresponding helper then `onChanged()` (optimistic local state is not needed because `onChanged` triggers `loadCourse` in the parent which already updates state):
+      **Import de React**: `React.ReactNode` requiere que `React` esté en scope. El archivo
+      ya tiene `import { useState } from 'react'`; cambiarlo a
+      `import React, { useState } from 'react'` (o agregar `ReactNode` al named import:
+      `import { useState, type ReactNode } from 'react'` y usar `ReactNode` en lugar de
+      `React.ReactNode`).
+
+      Files: `frontend/src/components/TopicMediaUploader.tsx`
+      Verify: `cd frontend && npm run build` — TypeScript + Vite compila sin errores.
+      Verificar también que `cd frontend && npm run lint` no reporta errores nuevos.
+
+- [ ] 7. Agregar test de backend `updateTopic` en `courses.service.spec.ts` (smoke).
+      Revisar si `findDetail` en `courses.service.spec.ts` mockea un topic con `contentText`.
+      Si los mocks existentes retornan topics sin ese campo, actualizar los mocks para
+      incluir `contentText: null` (valor neutral) en los objetos topic del mock, de manera
+      que el test no falle por campos inesperados.
+      Files: `backend/src/courses/courses.service.spec.ts`
+      Verify: `cd backend && npm run test` — toda la suite de tests pasa.
+
+- [ ] 8. Agregar test Cypress e2e para el flujo completo de Material de Lectura.
+      Crear `frontend/cypress/e2e/reading-material.cy.ts` con los siguientes casos de prueba,
+      siguiendo el patrón de `auth.cy.ts` (visitar ruta, interactuar con selectores de texto):
+
       ```ts
-      async function handleDeleteVideo() {
-        try {
-          await deleteTopicVideo(topicId);
-          onChanged();
-        } catch { setError('No se pudo eliminar el video.'); }
-      }
-      async function handleDeleteScreenRecording() {
-        try {
-          await deleteTopicScreenRecording(topicId);
-          onChanged();
-        } catch { setError('No se pudo eliminar la grabación.'); }
-      }
-      async function handleDeleteMaterial(materialId: string) {
-        try {
-          await deleteMaterial(topicId, materialId);
-          onChanged();
-        } catch { setError('No se pudo eliminar el material.'); }
-      }
+      describe('Material de Lectura — flujo del Profesor', () => {
+        beforeEach(() => {
+          cy.seedFullScenario().then(({ professor }) => {
+            cy.visit('/login');
+            cy.get('input[type="email"]').type(professor.email);
+            cy.get('input[type="password"]').type(professor.password);
+            cy.contains('button', 'Ingresar').click();
+          });
+        });
+
+        it('CA: el botón "Material de Lectura" aparece en cada tema del Temario', () => {
+          cy.visit('/profesor/cursos');
+          cy.get('a').first().click(); // accede al primer curso del profesor
+          cy.contains('Material de Lectura').should('be.visible');
+        });
+
+        it('CA: al hacer clic se abre el editor con textarea y botones Guardar/Cancelar', () => {
+          cy.visit('/profesor/cursos');
+          cy.get('a').first().click();
+          cy.contains('Material de Lectura').click();
+          cy.get('textarea').should('be.visible');
+          cy.contains('button', 'Guardar').should('be.visible');
+          cy.contains('button', 'Cancelar').should('be.visible');
+        });
+
+        it('CA: al cancelar con cambios, aparece popup de confirmación', () => {
+          cy.visit('/profesor/cursos');
+          cy.get('a').first().click();
+          cy.contains('Material de Lectura').click();
+          cy.get('textarea').type('Texto de prueba');
+          cy.contains('button', 'Cancelar').click();
+          // El ConfirmDialog del componente debe aparecer
+          cy.contains('¿Descartás los cambios en el Material de Lectura?').should('be.visible');
+        });
+
+        it('CA: al guardar, el texto se muestra en modo display con links clickeables', () => {
+          cy.visit('/profesor/cursos');
+          cy.get('a').first().click();
+          cy.contains('Material de Lectura').click();
+          const texto = 'Documentación oficial: https://docs.example.com';
+          cy.get('textarea').clear().type(texto);
+          cy.contains('button', 'Guardar').click();
+          // El textarea desaparece y se muestra la vista de display
+          cy.get('textarea').should('not.exist');
+          cy.contains('https://docs.example.com')
+            .should('have.attr', 'target', '_blank')
+            .and('have.attr', 'rel', 'noopener noreferrer');
+        });
+      });
       ```
 
-      **Upload label update** — the "Subir video (archivo)" label text should stay as-is when `videoUrl` is null and read "Reemplazar video (archivo)" when `videoUrl` is set — this logic already exists via `hasVideo`; replace `hasVideo` with `videoUrl !== null`. Same for screen-recording: label is "Grabar pantalla" when null, "Volver a grabar pantalla" when set.
+      Nota: estos tests son e2e y requieren que la base de datos de test esté seeded y el
+      servidor corriendo. El comando es `cd frontend && npx cypress run` (o
+      `npx cypress open` para modo interactivo).
 
-      Files: `c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\frontend\src\components\TopicMediaUploader.tsx`
-      Verify: `cd c:\Users\Asus\Documents\Informática\Testing de Aplicaciones\TPI\pecod\frontend && npm run build` — TypeScript + Vite build passes with zero errors.
+      Files: `frontend/cypress/e2e/reading-material.cy.ts`
+      Verify: `cd frontend && npx cypress run --spec cypress/e2e/reading-material.cy.ts` —
+      los 4 tests pasan (requiere servidor backend y frontend corriendo).
 
 ---
 
-## Notes
+## Resumen de archivos modificados/creados
 
-- **Migration**: After editing `schema.prisma` (step 1), the team must run `cd backend && npx prisma migrate dev --name add_screen_recording_url` before deploying. The plan does not automate this to avoid touching a production-connected database.
-- **S3 cleanup**: The DELETE endpoints clear the DB field and do not attempt to delete the file from S3. This is intentional — S3 lifecycle policies handle orphan cleanup, and adding the AWS SDK call here was not part of the requested scope.
-- **No new npm packages** are added anywhere in this plan.
-- **Visual consistency**: All new UI uses Tailwind classes already present in the file (`text-slate-700`, `text-red-600`, `underline`, `border rounded`, `text-xs`, `text-sm`, `p-2`, `mt-2`).
+| Archivo | Operación |
+|---|---|
+| `backend/src/courses/courses.service.ts` | Modificar: agregar `contentText: true` al select de topics en `findDetail` |
+| `backend/src/topics/dto/update-topic.dto.ts` | Modificar: agregar campo `contentText?: string` |
+| `backend/src/topics/topics.service.ts` | Modificar: extender `updateTopic` para manejar `contentText` |
+| `backend/src/topics/topics.service.spec.ts` | Modificar: agregar describe `updateTopic — contentText` con 3 CAs |
+| `backend/src/courses/courses.service.spec.ts` | Modificar: actualizar mocks de topic para incluir `contentText: null` |
+| `frontend/src/pages/CourseEditorPage.tsx` | Modificar: agregar `contentText` al tipo `Topic` y al prop de `TopicMediaUploader` |
+| `frontend/src/components/TopicMediaUploader.tsx` | Modificar: nuevo prop `contentText`, estados, botón, editor inline, display con links |
+| `frontend/cypress/e2e/reading-material.cy.ts` | Crear: 4 tests e2e del flujo completo |
+
+## Decisiones de diseño
+
+- **Reutilizar `contentText`** — Ya existe en el modelo Topic con exactamente el propósito
+  de "material teórico escrito". Agregar una columna nueva habría requerido una migración
+  innecesaria y duplicaría un campo semánticamente idéntico.
+
+- **Endpoint existente `PATCH /topics/:topicId`** — El controller y service ya manejan
+  updates parciales de topics. Extender el DTO y el data object es suficiente; no se crea
+  un endpoint nuevo. Esto es consistente con cómo `title` y `order` ya se actualizan.
+
+- **`ConfirmDialog` reutilizado** — Ya existe en el mismo archivo con la misma interfaz
+  `{ message, onConfirm, onCancel }` y el mismo estado `confirmDialog`. Se llama a
+  `askConfirm(...)` directamente, sin agregar ningún nuevo componente ni librería.
+
+- **Links con regex propio** — No se agrega `linkify-it`, `autolinker` ni ningún otro
+  paquete. Un regex `https?:\/\/[^\s]+` cubre todos los casos de uso descritos (pegar
+  links externos a documentación oficial) y es consistente con la política del proyecto de
+  no agregar dependencias nuevas si no es necesario.
+
+- **No se agrega migración** — `contentText` ya existe en la base de datos. No hay cambio
+  de esquema en este feature.
