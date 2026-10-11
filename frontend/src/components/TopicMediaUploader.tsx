@@ -172,6 +172,8 @@ export default function TopicMediaUploader({
 
   // ── Estado del editor de Material de Lectura ──────────────────────────────
   const [readingOpen, setReadingOpen] = useState(false);
+  const [readingExpanded, setReadingExpanded] = useState(true);
+  const [readingPreviewExpanded, setReadingPreviewExpanded] = useState(false);
   const [draftReading, setDraftReading] = useState('');
   const [savingReading, setSavingReading] = useState(false);
   const [readingError, setReadingError] = useState<string | null>(null);
@@ -403,10 +405,20 @@ export default function TopicMediaUploader({
       {/* ── Editor de Material de Lectura ────────────────────────────────── */}
       {readingOpen && (
         <div className="mt-2 border rounded p-3 space-y-2">
-          <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
+            <button
+              type="button"
+              onClick={() => setReadingExpanded((expanded) => !expanded)}
+              aria-expanded={readingExpanded}
+              className="text-xs text-slate-500 underline"
+            >
+              {readingExpanded ? 'Contraer' : 'Expandir'}
+            </button>
+          </div>
           <textarea
             autoFocus
-            rows={6}
+            rows={readingExpanded ? 6 : 2}
             value={draftReading}
             onChange={(e) => setDraftReading(e.target.value)}
             placeholder="Escribí el texto del material de lectura. Podés pegar links externos (ej: https://docs.example.com)."
@@ -441,15 +453,28 @@ export default function TopicMediaUploader({
         <div className="mt-2 border rounded p-3 space-y-1">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
-            <button
-              type="button"
-              onClick={() => { setDraftReading(contentText ?? ''); setReadingError(null); setReadingOpen(true); }}
-              className="text-xs text-slate-500 underline"
-            >
-              Editar
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setReadingPreviewExpanded((expanded) => !expanded)}
+                aria-expanded={readingPreviewExpanded}
+                className="text-xs text-slate-500 underline"
+              >
+                {readingPreviewExpanded ? 'Contraer' : 'Expandir'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDraftReading(contentText ?? ''); setReadingError(null); setReadingOpen(true); }}
+                className="text-xs text-slate-500 underline"
+              >
+                Editar
+              </button>
+            </div>
           </div>
-          <div className="text-sm text-slate-700 whitespace-pre-wrap break-words">
+          <div
+            className="text-sm text-slate-700 whitespace-pre-wrap break-words overflow-hidden"
+            style={readingPreviewExpanded ? undefined : { maxHeight: '6rem' }}
+          >
             <ReadingMaterialDisplay text={contentText} />
           </div>
         </div>

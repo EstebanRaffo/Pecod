@@ -44,4 +44,20 @@ describe('Material de Lectura — flujo del Profesor', () => {
       .should('have.attr', 'target', '_blank')
       .and('have.attr', 'rel', 'noopener noreferrer');
   });
+
+  it('CA: el preview del Material de Lectura se expande y contrae sin entrar en edición', () => {
+    cy.visit('/profesor/cursos');
+    cy.get('a').first().click();
+    cy.contains('Material de Lectura').click();
+    cy.get('textarea').type('Texto largo para probar la vista previa. '.repeat(20));
+    cy.contains('button', 'Guardar').click();
+
+    cy.get('textarea').should('not.exist');
+    cy.contains('button', 'Expandir').click();
+    cy.contains('button', 'Contraer').should('be.visible');
+    cy.get('textarea').should('not.exist');
+    cy.contains('button', 'Contraer').click();
+    cy.contains('button', 'Expandir').should('be.visible');
+    cy.get('textarea').should('not.exist');
+  });
 });
