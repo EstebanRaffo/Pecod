@@ -4,6 +4,10 @@ import { TopicsService } from './topics.service';
 import { createMockPrismaService, MockPrismaService } from '../test-utils/mock-prisma';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
+const mockUploadsService = {
+  generatePresignedGetUrl: jest.fn((key: string) => Promise.resolve(`https://signed/${key}`)),
+};
+
 describe('TopicsService', () => {
   let service: TopicsService;
   let prisma: MockPrismaService;
@@ -23,7 +27,8 @@ describe('TopicsService', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaService();
-    service = new TopicsService(prisma as any);
+    mockUploadsService.generatePresignedGetUrl.mockClear();
+    service = new TopicsService(prisma as any, mockUploadsService as any);
   });
 
   describe('getContent (HU3/HU4: contenido gateado por inscripción)', () => {
@@ -31,6 +36,9 @@ describe('TopicsService', () => {
       prisma.topic.findUnique.mockResolvedValue({
         id: 'topic-1',
         courseId: 'course-1',
+        videoUrl: null,
+        screenRecordingUrl: null,
+        materials: [],
         course: { professorId: 'prof-1' },
       });
       prisma.enrollment.findUnique.mockResolvedValue(null);
@@ -42,6 +50,9 @@ describe('TopicsService', () => {
       prisma.topic.findUnique.mockResolvedValue({
         id: 'topic-1',
         courseId: 'course-1',
+        videoUrl: null,
+        screenRecordingUrl: null,
+        materials: [],
         course: { professorId: 'prof-1' },
       });
       prisma.enrollment.findUnique.mockResolvedValue({ id: 'enr-1' });

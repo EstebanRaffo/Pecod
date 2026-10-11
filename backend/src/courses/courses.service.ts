@@ -5,10 +5,14 @@ import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CatalogQueryDto } from './dto/catalog-query.dto';
+import { UploadsService } from '../uploads/uploads.service';
 
 @Injectable()
 export class CoursesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadsService: UploadsService,
+  ) {}
 
   // HU1: catálogo con filtro combinable por categoría y/o tecnología.
   // El catálogo respeta el aislamiento multi-tenant: cada usuario ve solo
@@ -52,7 +56,32 @@ export class CoursesService {
       isEnrolled = !!enrollment;
     }
 
-    return { ...course, isEnrolled };
+    const urlToKey = (url: string) => url.replace(/^https?:\/\/[^/]+\//, '');
+
+    const topics = await Promise.all(
+      course.topics.map(async (topic) => {
+        const videoUrl = topic.videoUrl
+          ? await this.uploadsService.generatePresignedGetUrl(urlToKey(topic.videoUrl))
+          : topic.videoUrl;
+
+        const screenRecordingUrl = topic.screenRecordingUrl
+          ? await this.uploadsService.generatePresignedGetUrl(urlToKey(topic.screenRecordingUrl))
+          : topic.screenRecordingUrl;
+
+        const materials = await Promise.all(
+          topic.materials.map(async (m) => ({
+            ...m,
+            fileUrl: m.fileUrl
+              ? await this.uploadsService.generatePresignedGetUrl(urlToKey(m.fileUrl))
+              : m.fileUrl,
+          })),
+        );
+
+        return { ...topic, videoUrl, screenRecordingUrl, materials };
+      }),
+    );
+
+    return { ...course, topics, isEnrolled };
   }
 
   // HU5: alta de curso. Queda sin publicar hasta que el Profesor lo publique (HU8).

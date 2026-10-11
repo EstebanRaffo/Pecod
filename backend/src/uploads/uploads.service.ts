@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import { RequestUploadUrlDto, UploadKind } from './dto/request-upload-url.dto';
@@ -55,11 +55,20 @@ export class UploadsService {
 
     const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 }); // 5 min
 
+    const fileUrl = `https://${this.bucket}.s3.${this.config.get<string>('AWS_REGION')}.amazonaws.com/${key}`;
+
     return {
       uploadUrl, // el frontend hace PUT directo acá con el archivo
-      fileUrl: `https://${this.bucket}.s3.amazonaws.com/${key}`, // URL final a guardar en el tema
+      fileUrl,   // URL final a guardar en el tema
       key,
     };
+  }
+
+  // Genera una URL prefirmada para GET (lectura) de un objeto privado en S3.
+  // key: ruta relativa dentro del bucket, p. ej. "video/uuid-name.mp4"
+  async generatePresignedGetUrl(key: string, expiresIn = 3600): Promise<string> {
+    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+    return getSignedUrl(this.s3, command, { expiresIn });
   }
 
   private validate(dto: RequestUploadUrlDto) {

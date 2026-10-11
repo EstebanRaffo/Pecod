@@ -4,6 +4,10 @@ import { CoursesService } from './courses.service';
 import { createMockPrismaService, MockPrismaService } from '../test-utils/mock-prisma';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
+const mockUploadsService = {
+  generatePresignedGetUrl: jest.fn((key: string) => Promise.resolve(`https://signed/${key}`)),
+};
+
 describe('CoursesService', () => {
   let service: CoursesService;
   let prisma: MockPrismaService;
@@ -29,7 +33,8 @@ describe('CoursesService', () => {
 
   beforeEach(() => {
     prisma = createMockPrismaService();
-    service = new CoursesService(prisma as any);
+    mockUploadsService.generatePresignedGetUrl.mockClear();
+    service = new CoursesService(prisma as any, mockUploadsService as any);
   });
 
   describe('catalog (HU1)', () => {

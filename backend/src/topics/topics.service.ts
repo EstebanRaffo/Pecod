@@ -7,10 +7,14 @@ import { UpdateTopicDto } from './dto/update-topic.dto';
 import { AttachVideoDto } from './dto/attach-video.dto';
 import { AttachScreenRecordingDto } from './dto/attach-screen-recording.dto';
 import { AddMaterialDto } from './dto/add-material.dto';
+import { UploadsService } from '../uploads/uploads.service';
 
 @Injectable()
 export class TopicsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadsService: UploadsService,
+  ) {}
 
   async createTopic(courseId: string, professor: AuthenticatedUser, dto: CreateTopicDto) {
     await this.getOwnedCourseOrThrow(courseId, professor);
@@ -100,7 +104,26 @@ export class TopicsService {
       throw new ForbiddenException('No podés ver el contenido de un curso que no te pertenece.');
     }
 
-    return topic;
+    const urlToKey = (url: string) => url.replace(/^https?:\/\/[^/]+\//, '');
+
+    const videoUrl = topic.videoUrl
+      ? await this.uploadsService.generatePresignedGetUrl(urlToKey(topic.videoUrl))
+      : topic.videoUrl;
+
+    const screenRecordingUrl = topic.screenRecordingUrl
+      ? await this.uploadsService.generatePresignedGetUrl(urlToKey(topic.screenRecordingUrl))
+      : topic.screenRecordingUrl;
+
+    const materials = await Promise.all(
+      topic.materials.map(async (m) => ({
+        ...m,
+        fileUrl: m.fileUrl
+          ? await this.uploadsService.generatePresignedGetUrl(urlToKey(m.fileUrl))
+          : m.fileUrl,
+      })),
+    );
+
+    return { ...topic, videoUrl, screenRecordingUrl, materials };
   }
 
   private async getOwnedCourseOrThrow(courseId: string, professor: AuthenticatedUser) {
