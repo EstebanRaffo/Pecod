@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { api } from '../api/client';
 import {
   getVideoDurationSeconds,
@@ -48,6 +48,7 @@ interface Props {
   videoUrl: string | null;
   screenRecordingUrl: string | null;
   materials: Array<{ id: string; fileName: string; fileUrl: string; fileType: string }>;
+  contentText: string | null;
   onChanged: () => void;
 }
 
@@ -74,11 +75,46 @@ function TrashIcon() {
   );
 }
 
+/**
+ * Detecta URLs en `text` y las envuelve en <a target="_blank">.
+ * Regex: http(s):// seguido de caracteres no-espacio.
+ */
+function ReadingMaterialDisplay({ text }: { text: string }) {
+  const urlRegex = /https?:\/\/[^\s]+/g;
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = urlRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const url = match[0];
+    parts.push(
+      <a
+        key={match.index}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 underline break-all"
+      >
+        {url}
+      </a>,
+    );
+    lastIndex = match.index + url.length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return <>{parts}</>;
+}
+
 export default function TopicMediaUploader({
   topicId,
   videoUrl,
   screenRecordingUrl,
   materials,
+  contentText,
   onChanged,
 }: Props) {
   const [status, setStatus] = useState<string | null>(null);
@@ -104,6 +140,37 @@ export default function TopicMediaUploader({
 
   function handleCancel() {
     setConfirmDialog(null);
+  }
+
+  // ── Estado del editor de Material de Lectura ──────────────────────────────
+  const [readingOpen, setReadingOpen] = useState(false);
+  const [draftReading, setDraftReading] = useState('');
+  const [savingReading, setSavingReading] = useState(false);
+
+  async function handleSaveReading() {
+    setSavingReading(true);
+    setError(null);
+    try {
+      await api.patch(`/topics/${topicId}`, { contentText: draftReading });
+      setReadingOpen(false);
+      onChanged();
+    } catch (err: any) {
+      setError(err.response?.data?.message ?? 'No se pudo guardar el material de lectura.');
+    } finally {
+      setSavingReading(false);
+    }
+  }
+
+  function handleCancelReading() {
+    const saved = contentText ?? '';
+    if (draftReading !== saved) {
+      askConfirm(
+        '¿Descartás los cambios en el Material de Lectura?',
+        async () => { setReadingOpen(false); },
+      );
+    } else {
+      setReadingOpen(false);
+    }
   }
 
   // ── Upload helpers ────────────────────────────────────────────────────────
@@ -285,7 +352,71 @@ export default function TopicMediaUploader({
           Agregar material
           <input type="file" accept=".pdf,.xlsx,.xls,.docx,.doc,.txt" onChange={handleMaterialSelected} hidden />
         </label>
+
+        {/* HU nueva: Material de Lectura */}
+        <button
+          type="button"
+          onClick={() => {
+            setDraftReading(contentText ?? '');
+            setReadingOpen(true);
+          }}
+          className="text-slate-700 underline"
+        >
+          Material de Lectura
+        </button>
       </div>
+
+      {/* ── Editor de Material de Lectura ────────────────────────────────── */}
+      {readingOpen && (
+        <div className="mt-2 border rounded p-3 space-y-2">
+          <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
+          <textarea
+            autoFocus
+            rows={6}
+            value={draftReading}
+            onChange={(e) => setDraftReading(e.target.value)}
+            placeholder="Escribí el texto del material de lectura. Podés pegar links externos (ej: https://docs.example.com)."
+            className="w-full border border-slate-300 rounded px-3 py-2 text-sm resize-y"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleSaveReading}
+              disabled={savingReading}
+              className="bg-slate-800 text-white px-3 py-2 rounded text-sm disabled:opacity-50"
+            >
+              {savingReading ? 'Guardando...' : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancelReading}
+              disabled={savingReading}
+              className="border border-slate-300 px-3 py-2 rounded text-sm disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Visualización del Material de Lectura guardado ───────────────── */}
+      {!readingOpen && contentText && (
+        <div className="mt-2 border rounded p-3 space-y-1">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
+            <button
+              type="button"
+              onClick={() => { setDraftReading(contentText ?? ''); setReadingOpen(true); }}
+              className="text-xs text-slate-500 underline"
+            >
+              Editar
+            </button>
+          </div>
+          <div className="text-sm text-slate-700 whitespace-pre-wrap break-words">
+            <ReadingMaterialDisplay text={contentText} />
+          </div>
+        </div>
+      )}
 
       {/* ── Vista previa: video subido (HU5) ─────────────────────────────── */}
       {videoUrl && (

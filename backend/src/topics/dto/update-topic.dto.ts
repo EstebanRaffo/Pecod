@@ -8,5 +8,9 @@ export class UpdateTopicDto {
   @IsOptional()
   @IsInt()
   order?: number;
+
+  @IsOptional()
+  @IsString()
+  contentText?: string;
 }
 

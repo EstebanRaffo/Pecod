@@ -209,6 +209,42 @@ describe('TopicsService', () => {
     });
   });
 
+  describe('updateTopic — contentText (Material de Lectura)', () => {
+    it('CA: el Profesor dueño puede guardar texto en contentText', async () => {
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', course: { professorId: 'prof-1' } });
+      prisma.topic.update.mockResolvedValue({ id: 'topic-1', contentText: 'texto de lectura' });
+
+      const result = await service.updateTopic('topic-1', professor, { contentText: 'texto de lectura' });
+
+      expect(prisma.topic.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ contentText: 'texto de lectura' }) }),
+      );
+      expect(result.contentText).toBe('texto de lectura');
+    });
+
+    it('CA: un Profesor de otro curso no puede guardar contentText', async () => {
+      prisma.topic.findUnique.mockResolvedValue({
+        id: 'topic-1',
+        course: { professorId: 'otro-profesor' },
+      });
+
+      await expect(
+        service.updateTopic('topic-1', professor, { contentText: 'texto' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('CA: guardar contentText vacío es aceptado', async () => {
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', course: { professorId: 'prof-1' } });
+      prisma.topic.update.mockResolvedValue({ id: 'topic-1', contentText: '' });
+
+      await service.updateTopic('topic-1', professor, { contentText: '' });
+
+      expect(prisma.topic.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ contentText: '' }) }),
+      );
+    });
+  });
+
   describe('deleteMaterial (HU7)', () => {
     it('CA: un Profesor de otro curso no puede eliminar un material', async () => {
       prisma.topic.findUnique.mockResolvedValue({

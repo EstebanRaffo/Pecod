@@ -34,6 +34,7 @@ interface Topic {
   videoUrl?: string | null;
   screenRecordingUrl?: string | null;
   materials?: Material[];
+  contentText?: string | null;
 }
 
 interface Evaluation {
@@ -353,6 +354,7 @@ export default function CourseEditorPage() {
                 videoUrl={topic.videoUrl ?? null}
                 screenRecordingUrl={topic.screenRecordingUrl ?? null}
                 materials={topic.materials ?? []}
+                contentText={topic.contentText ?? null}
                 onChanged={loadCourse}
               />
             </li>

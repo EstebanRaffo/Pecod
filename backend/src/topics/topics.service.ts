@@ -28,6 +28,7 @@ export class TopicsService {
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(dto.order !== undefined ? { order: dto.order } : {}),
+        ...(dto.contentText !== undefined ? { contentText: dto.contentText } : {}),
       },
     });
   }
