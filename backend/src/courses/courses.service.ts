@@ -32,6 +32,8 @@ export class CoursesService {
   }
 
   // Cursos propios del Profesor, incluyendo borradores (no solo los publicados).
+  // IMPORTANTE: este método NO incluye topics; si se agrega include de topics en el futuro,
+  // las URLs deben ser firmadas DESPUÉS de verificar permisos.
   findMine(user: AuthenticatedUser) {
     return this.prisma.course.findMany({
       where: { professorId: user.userId },
@@ -39,8 +41,9 @@ export class CoursesService {
     });
   }
 
-  // HU4: detalle de un curso. Un Alumno no inscripto ve la descripción pero no el contenido
-  // (el contenido de las clases se sirve desde el módulo topics, que valida la inscripción).
+  // HU4: detalle de un curso. Un Alumno no inscripto ve la descripción pero no el contenido.
+  // Las presigned URLs solo se generan para el Profesor dueño del curso o para un Alumno
+  // inscripto; cualquier otro usuario recibe los topics sin URLs firmadas.
   async findDetail(id: string, user: AuthenticatedUser) {
     const course = await this.prisma.course.findUnique({
       where: { id },
@@ -48,7 +51,10 @@ export class CoursesService {
     });
     if (!course) throw new NotFoundException('Curso no encontrado.');
 
+    // Determinar si el usuario tiene derecho a acceder al contenido multimedia.
     let isEnrolled = false;
+    const isProfessorOwner = user.role === Role.PROFESSOR && course.professorId === user.userId;
+
     if (user.role === Role.STUDENT) {
       const enrollment = await this.prisma.enrollment.findUnique({
         where: { studentId_courseId: { studentId: user.userId, courseId: id } },
@@ -56,10 +62,22 @@ export class CoursesService {
       isEnrolled = !!enrollment;
     }
 
+    const canAccessContent = isProfessorOwner || isEnrolled;
+
     const urlToKey = (url: string) => url.replace(/^https?:\/\/[^/]+\//, '');
 
+    // Presigned URLs only for authorized users; others receive null for media fields.
     const topics = await Promise.all(
       course.topics.map(async (topic) => {
+        if (!canAccessContent) {
+          return {
+            ...topic,
+            videoUrl: null,
+            screenRecordingUrl: null,
+            materials: topic.materials.map((m) => ({ ...m, fileUrl: null })),
+          };
+        }
+
         const videoUrl = topic.videoUrl
           ? await this.uploadsService.generatePresignedGetUrl(urlToKey(topic.videoUrl))
           : topic.videoUrl;
