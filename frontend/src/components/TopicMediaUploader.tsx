@@ -104,7 +104,10 @@ function ReadingMaterialDisplay({ text }: { text: string }) {
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index));
     }
-    const url = match[0];
+    const rawUrl = match[0];
+    // Strip trailing punctuation that is likely prose punctuation, not part of the URL.
+    const url = rawUrl.replace(/[.,;:!?)]+$/, '');
+    const trailingPunct = rawUrl.slice(url.length);
     parts.push(
       <a
         key={match.index}
@@ -116,7 +119,10 @@ function ReadingMaterialDisplay({ text }: { text: string }) {
         {url}
       </a>,
     );
-    lastIndex = match.index + url.length;
+    if (trailingPunct) {
+      parts.push(trailingPunct);
+    }
+    lastIndex = match.index + rawUrl.length;
   }
   if (lastIndex < text.length) {
     parts.push(text.slice(lastIndex));
@@ -168,16 +174,17 @@ export default function TopicMediaUploader({
   const [readingOpen, setReadingOpen] = useState(false);
   const [draftReading, setDraftReading] = useState('');
   const [savingReading, setSavingReading] = useState(false);
+  const [readingError, setReadingError] = useState<string | null>(null);
 
   async function handleSaveReading() {
     setSavingReading(true);
-    setError(null);
+    setReadingError(null);
     try {
       await api.patch(`/topics/${topicId}`, { contentText: draftReading });
       setReadingOpen(false);
       onChanged();
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'No se pudo guardar el material de lectura.');
+      setReadingError(err.response?.data?.message ?? 'No se pudo guardar el material de lectura.');
     } finally {
       setSavingReading(false);
     }
@@ -384,6 +391,7 @@ export default function TopicMediaUploader({
           type="button"
           onClick={() => {
             setDraftReading(contentText ?? '');
+            setReadingError(null);
             setReadingOpen(true);
           }}
           className="text-slate-700 underline"
@@ -422,6 +430,9 @@ export default function TopicMediaUploader({
               Cancelar
             </button>
           </div>
+          {readingError && (
+            <p className="text-red-600 text-xs">{readingError}</p>
+          )}
         </div>
       )}
 
@@ -432,7 +443,7 @@ export default function TopicMediaUploader({
             <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
             <button
               type="button"
-              onClick={() => { setDraftReading(contentText ?? ''); setReadingOpen(true); }}
+              onClick={() => { setDraftReading(contentText ?? ''); setReadingError(null); setReadingOpen(true); }}
               className="text-xs text-slate-500 underline"
             >
               Editar

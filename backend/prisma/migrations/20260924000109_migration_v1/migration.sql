@@ -54,7 +54,6 @@ CREATE TABLE "topics" (
     "order" INTEGER NOT NULL,
     "videoUrl" TEXT,
     "videoDurationSeconds" INTEGER,
-    "contentText" TEXT,
 
     CONSTRAINT "topics_pkey" PRIMARY KEY ("id")
 );
