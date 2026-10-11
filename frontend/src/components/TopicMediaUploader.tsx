@@ -14,13 +14,26 @@ interface ConfirmDialogProps {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Título del diálogo. Por defecto: "Confirmar eliminación" */
+  title?: string;
+  /** Etiqueta del botón de confirmación. Por defecto: "Eliminar" */
+  confirmLabel?: string;
+  /** Si es true, el botón de confirmación se muestra con estilo destructivo (rojo). Por defecto: true */
+  destructive?: boolean;
 }
 
-function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogProps) {
+function ConfirmDialog({
+  message,
+  onConfirm,
+  onCancel,
+  title = 'Confirmar eliminación',
+  confirmLabel = 'Eliminar',
+  destructive = true,
+}: ConfirmDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6 space-y-4">
-        <h3 className="text-base font-semibold text-slate-800">Confirmar eliminación</h3>
+        <h3 className="text-base font-semibold text-slate-800">{title}</h3>
         <p className="text-sm text-slate-600">{message}</p>
         <div className="flex justify-end gap-3 pt-2">
           <button
@@ -33,9 +46,11 @@ function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogProps) {
           <button
             type="button"
             onClick={onConfirm}
-            className="px-4 py-2 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+            className={`px-4 py-2 text-sm rounded text-white ${
+              destructive ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-700 hover:bg-slate-800'
+            }`}
           >
-            Eliminar
+            {confirmLabel}
           </button>
         </div>
       </div>
@@ -125,10 +140,17 @@ export default function TopicMediaUploader({
   const [confirmDialog, setConfirmDialog] = useState<{
     message: string;
     onConfirm: () => Promise<void>;
+    title?: string;
+    confirmLabel?: string;
+    destructive?: boolean;
   } | null>(null);
 
-  function askConfirm(message: string, action: () => Promise<void>) {
-    setConfirmDialog({ message, onConfirm: action });
+  function askConfirm(
+    message: string,
+    action: () => Promise<void>,
+    options?: { title?: string; confirmLabel?: string; destructive?: boolean },
+  ) {
+    setConfirmDialog({ message, onConfirm: action, ...options });
   }
 
   async function handleConfirm() {
@@ -167,6 +189,7 @@ export default function TopicMediaUploader({
       askConfirm(
         '¿Descartás los cambios en el Material de Lectura?',
         async () => { setReadingOpen(false); },
+        { title: 'Descartar cambios', confirmLabel: 'Descartar', destructive: false },
       );
     } else {
       setReadingOpen(false);
@@ -321,6 +344,9 @@ export default function TopicMediaUploader({
           message={confirmDialog.message}
           onConfirm={handleConfirm}
           onCancel={handleCancel}
+          title={confirmDialog.title}
+          confirmLabel={confirmDialog.confirmLabel}
+          destructive={confirmDialog.destructive}
         />
       )}
       {/* ── Botones de acción ─────────────────────────────────────────────── */}

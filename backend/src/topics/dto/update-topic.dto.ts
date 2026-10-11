@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateTopicDto {
   @IsOptional()
@@ -11,6 +11,7 @@ export class UpdateTopicDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(50000)
   contentText?: string;
 }
 
