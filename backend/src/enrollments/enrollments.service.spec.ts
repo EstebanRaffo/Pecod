@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { EnrollmentsService } from './enrollments.service';
 import { createMockPrismaService, MockPrismaService } from '../test-utils/mock-prisma';
@@ -71,7 +71,9 @@ describe('EnrollmentsService (HU2, HU3)', () => {
   });
 
   it('CA (HU3): "Mis cursos" devuelve solo las inscripciones del Alumno autenticado', async () => {
-    prisma.enrollment.findMany.mockResolvedValue([{ id: 'enr-1', course: { id: 'course-1' } }]);
+    prisma.enrollment.findMany.mockResolvedValue([{
+      id: 'enr-1', course: { id: 'course-1', _count: { topics: 3 } }, topicProgress: [{ topicId: 'topic-1' }],
+    }]);
 
     const result = await service.myCourses(student);
 
@@ -79,5 +81,81 @@ describe('EnrollmentsService (HU2, HU3)', () => {
       expect.objectContaining({ where: { studentId: 'student-1' } }),
     );
     expect(result).toHaveLength(1);
+    expect(result[0].progress).toEqual({ viewed: 1, total: 3, percentage: 33, viewedTopicIds: ['topic-1'] });
+  });
+
+  describe('HU16: progreso individual', () => {
+    const enrollment = (total = 3, viewedTopicIds = ['topic-1']) => ({
+      id: 'enr-1', course: { _count: { topics: total } },
+      topicProgress: viewedTopicIds.map((topicId) => ({ topicId })),
+    });
+
+    it.each([
+      [0, [], 0], [3, [], 0], [3, ['topic-1'], 33],
+      [3, ['topic-1', 'topic-2'], 67], [2, ['topic-1', 'topic-2'], 100],
+    ])('calcula el porcentaje con %i temas y %j vistos', async (total, ids, percentage) => {
+      prisma.enrollment.findUnique.mockResolvedValue(enrollment(total as number, ids as string[]));
+      expect(await service.getProgress('course-1', student)).toEqual({
+        viewed: (ids as string[]).length, total, percentage, viewedTopicIds: ids,
+      });
+      expect(prisma.enrollment.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+        where: { studentId_courseId: { studentId: student.userId, courseId: 'course-1' } },
+      }));
+      expect(prisma.evaluation.findMany).not.toHaveBeenCalled();
+    });
+
+    it('marca de forma idempotente para la propia inscripcion', async () => {
+      prisma.enrollment.findUnique.mockResolvedValue(enrollment());
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', courseId: 'course-1' });
+      await service.setTopicViewed('course-1', 'topic-1', student, true);
+      expect(prisma.topicProgress.upsert).toHaveBeenCalledWith({
+        where: { enrollmentId_topicId: { enrollmentId: 'enr-1', topicId: 'topic-1' } },
+        create: { enrollmentId: 'enr-1', topicId: 'topic-1' }, update: {},
+      });
+    });
+
+    it('desmarca solo el tema de la propia inscripcion', async () => {
+      prisma.enrollment.findUnique.mockResolvedValue(enrollment(3, []));
+      prisma.topic.findUnique.mockResolvedValue({ id: 'topic-1', courseId: 'course-1' });
+      expect((await service.setTopicViewed('course-1', 'topic-1', student, false)).percentage).toBe(0);
+      expect(prisma.topicProgress.deleteMany).toHaveBeenCalledWith({
+        where: { enrollmentId: 'enr-1', topicId: 'topic-1' },
+      });
+    });
+
+    it('rechaza consultar, marcar y desmarcar sin inscripcion', async () => {
+      prisma.enrollment.findUnique.mockResolvedValue(null);
+      await expect(service.getProgress('course-1', student)).rejects.toThrow(ForbiddenException);
+      for (const viewed of [true, false]) {
+        await expect(service.setTopicViewed('course-1', 'topic-1', student, viewed)).rejects.toThrow(ForbiddenException);
+      }
+      expect(prisma.topicProgress.upsert).not.toHaveBeenCalled();
+      expect(prisma.topicProgress.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it.each([Role.PROFESSOR, Role.ADMIN])('rechaza el rol %s', async (role) => {
+      const user = { ...student, role };
+      await expect(service.getProgress('course-1', user)).rejects.toThrow(ForbiddenException);
+      await expect(service.myCourses(user)).rejects.toThrow(ForbiddenException);
+      await expect(service.setTopicViewed('course-1', 'topic-1', user, true)).rejects.toThrow(ForbiddenException);
+      expect(prisma.enrollment.findUnique).not.toHaveBeenCalled();
+    });
+
+    it.each([null, { id: 'topic-1', courseId: 'otro-curso' }])('rechaza temas inexistentes o de otro curso', async (topic) => {
+      prisma.enrollment.findUnique.mockResolvedValue(enrollment());
+      prisma.topic.findUnique.mockResolvedValue(topic);
+      await expect(service.setTopicViewed('course-1', 'topic-1', student, true)).rejects.toThrow(NotFoundException);
+      expect(prisma.topicProgress.upsert).not.toHaveBeenCalled();
+    });
+
+    it('recalcula al agregar o eliminar temas', async () => {
+      prisma.enrollment.findUnique
+        .mockResolvedValueOnce(enrollment(2, ['topic-1']))
+        .mockResolvedValueOnce(enrollment(3, ['topic-1']))
+        .mockResolvedValueOnce(enrollment(2, []));
+      expect((await service.getProgress('course-1', student)).percentage).toBe(50);
+      expect((await service.getProgress('course-1', student)).percentage).toBe(33);
+      expect((await service.getProgress('course-1', student)).percentage).toBe(0);
+    });
   });
 });

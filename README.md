@@ -58,6 +58,12 @@ npm run start:dev
 
 El backend queda en `http://localhost:3000/api`.
 
+#### Subidas directas a S3
+
+Las cargas desde el navegador usan `PUT` directo a S3, por lo que el CORS de Nest no configura el CORS del bucket. Aplicá `backend/s3-cors.json` en **S3 → bucket → Permissions → Cross-origin resource sharing (CORS)**. La regla incluida habilita el frontend local en `http://localhost:5173` y `http://localhost:5174`; para otros entornos, agregá el origen exacto del frontend (protocolo, host y puerto).
+
+El principal de AWS configurado en el backend también necesita `s3:PutObject` sobre los prefijos `video/*` y `material/*`. Las lecturas firmadas requieren `s3:GetObject`. Un `403` de S3 suele indicar permisos, región o firma incorrecta; un error de red/CORS suele indicar que falta el origen en la política CORS del bucket.
+
 **Credenciales del Administrador inicial** (creadas por el seed, cambiarlas luego):
 - Email: `admin@pecod.com`
 - Contraseña: `Admin123!`
@@ -73,7 +79,7 @@ npm install
 npm run dev
 ```
 
-El frontend queda en `http://localhost:5173`.
+El frontend queda en `http://localhost:5173` (Vite usa `5174` si `5173` ya está ocupado).
 
 ## Flujo para probar el sistema de punta a punta
 
@@ -84,6 +90,19 @@ El frontend queda en `http://localhost:5173`.
 5. Cerrar sesión, loguearse como el Profesor, crear un curso (HU5), agregarle temas (HU5) y publicarlo (HU8).
 6. Cerrar sesión, loguearse como el Alumno, ver el catálogo (HU1), entrar al detalle (HU4) e inscribirse (HU2).
 7. Ver "Mis cursos" (HU3).
+
+### Progreso individual (HU16)
+
+En la cursada, cada tema permite marcarse como visto y desmarcarse. La cursada y "Mis cursos" muestran los temas vistos sobre el total, el porcentaje y una barra de progreso. El porcentaje usa `Math.round(vistos / total * 100)`; un curso sin temas muestra 0%. Las evaluaciones no cuentan.
+
+Solo un Alumno inscripto puede consultar o modificar su propio progreso. Los registros persisten por inscripción y tema; el total se consulta nuevamente en cada lectura para reflejar los temas agregados o eliminados. La eliminación de un tema borra su progreso mediante `onDelete: Cascade`.
+
+Endpoints autenticados (base `/api`):
+- `GET /courses/:courseId/progress`: avance propio y IDs de temas vistos.
+- `PUT /courses/:courseId/topics/:topicId/viewed`: marcar como visto, de forma idempotente.
+- `DELETE /courses/:courseId/topics/:topicId/viewed`: desmarcar, de forma idempotente.
+
+Para actualizar una base existente, ejecutar `npx prisma migrate deploy` y `npm run prisma:generate` desde `backend`, con el backend detenido para evitar el bloqueo de la DLL de Prisma en Windows.
 
 ## Testing
 
@@ -119,6 +138,8 @@ npm run cypress:run    # modo headless (CI)
 ```
 
 Specs incluidos: `auth.cy.ts` (HU10), `catalog-and-enrollment.cy.ts` (HU1/HU2/HU3), `evaluation-attempts.cy.ts` (HU11/HU12, incluyendo el límite de 2 intentos).
+
+HU16: `npm test -- --runInBand enrollments.service.spec.ts` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/progress.cy.ts` desde `frontend`. Los helpers compartidos y el spec de progreso usan `cy.env`, compatible con Cypress 16; los specs anteriores todavía usan la API retirada `Cypress.env`.
 
 > Nota: la colección REST usa Cypress como decisión de este esqueleto; Playwright sigue siendo una alternativa válida (ver "Herramientas" del TP) si el equipo lo prefiere — la estructura de specs no cambiaría demasiado.
 

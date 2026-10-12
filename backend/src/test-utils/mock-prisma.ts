@@ -8,6 +8,8 @@ type ModelMock = {
   create: jest.Mock;
   update: jest.Mock;
   delete: jest.Mock;
+  upsert: jest.Mock;
+  deleteMany: jest.Mock;
 };
 
 function createModelMock(): ModelMock {
@@ -18,6 +20,8 @@ function createModelMock(): ModelMock {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    upsert: jest.fn(),
+    deleteMany: jest.fn(),
   };
 }
 
@@ -29,6 +33,7 @@ export function createMockPrismaService() {
     topic: createModelMock(),
     material: createModelMock(),
     enrollment: createModelMock(),
+    topicProgress: createModelMock(),
     evaluation: createModelMock(),
     question: createModelMock(),
     questionOption: createModelMock(),

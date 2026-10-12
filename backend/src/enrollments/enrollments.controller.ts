@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -22,5 +22,20 @@ export class EnrollmentsController {
   @Get('enrollments/my-courses')
   myCourses(@CurrentUser() user: AuthenticatedUser) {
     return this.enrollmentsService.myCourses(user);
+  }
+
+  @Get('courses/:courseId/progress')
+  getProgress(@Param('courseId') courseId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.enrollmentsService.getProgress(courseId, user);
+  }
+
+  @Put('courses/:courseId/topics/:topicId/viewed')
+  markViewed(@Param('courseId') courseId: string, @Param('topicId') topicId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.enrollmentsService.setTopicViewed(courseId, topicId, user, true);
+  }
+
+  @Delete('courses/:courseId/topics/:topicId/viewed')
+  unmarkViewed(@Param('courseId') courseId: string, @Param('topicId') topicId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.enrollmentsService.setTopicViewed(courseId, topicId, user, false);
   }
 }

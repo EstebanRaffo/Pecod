@@ -21,23 +21,23 @@ declare global {
 }
 
 Cypress.Commands.add('apiLogin', (email: string, password: string) => {
-  return cy
-    .request('POST', `${Cypress.env('apiUrl')}/auth/login`, { email, password })
+  return cy.env(['apiUrl']).then(({ apiUrl }) => cy
+    .request('POST', `${apiUrl}/auth/login`, { email, password })
     .then((res) => {
       window.localStorage.setItem('pecod_token', res.body.accessToken);
       window.localStorage.setItem('pecod_user', JSON.stringify(res.body.user));
       return { token: res.body.accessToken, user: res.body.user };
-    });
+    }));
 });
 
 Cypress.Commands.add('seedFullScenario', () => {
-  const apiUrl = Cypress.env('apiUrl');
+  return cy.env(['apiUrl', 'adminEmail', 'adminPassword']).then(({ apiUrl, adminEmail, adminPassword }) => {
   const unique = Date.now();
 
   return cy
     .request('POST', `${apiUrl}/auth/login`, {
-      email: Cypress.env('adminEmail'),
-      password: Cypress.env('adminPassword'),
+      email: adminEmail,
+      password: adminPassword,
     })
     .then((loginRes) => {
       const adminToken = loginRes.body.accessToken;
@@ -127,6 +127,7 @@ Cypress.Commands.add('seedFullScenario', () => {
             });
         });
     });
+  });
 });
 
 export {};

@@ -22,9 +22,23 @@ export async function uploadFileToS3(file: File | Blob, kind: UploadKind, fileNa
   });
 
   // PUT directo a S3: sin el interceptor de /api (no lleva JWT ni pasa por nuestro backend).
-  await axios.put(data.uploadUrl, file, {
-    headers: { 'Content-Type': contentType },
-  });
+  try {
+    await axios.put(data.uploadUrl, file, {
+      headers: { 'Content-Type': contentType },
+    });
+  } catch (error) {
+    if (axios.isAxiosError(error) && !error.response) {
+      throw new Error(
+        'No se pudo conectar con S3. Verificá que el bucket permita CORS desde el origen del frontend.',
+      );
+    }
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
+      throw new Error(
+        'S3 rechazó la carga (403). Verificá el permiso s3:PutObject, la región del bucket y la configuración CORS.',
+      );
+    }
+    throw error;
+  }
 
   return data.fileUrl;
 }

@@ -223,7 +223,7 @@ export default function TopicMediaUploader({
       setStatus('Video cargado correctamente.');
       onChanged();
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'No se pudo subir el video.');
+      setError(err.response?.data?.message ?? err.message ?? 'No se pudo subir el video.');
     } finally {
       setStatus(null);
     }
@@ -258,7 +258,7 @@ export default function TopicMediaUploader({
       setStatus('Grabación guardada correctamente.');
       onChanged();
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'No se pudo guardar la grabación.');
+      setError(err.response?.data?.message ?? err.message ?? 'No se pudo guardar la grabación.');
     } finally {
       setStatus(null);
     }
@@ -293,7 +293,7 @@ export default function TopicMediaUploader({
       setStatus('Material agregado correctamente.');
       onChanged();
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'No se pudo subir el material.');
+      setError(err.response?.data?.message ?? err.message ?? 'No se pudo subir el material.');
     } finally {
       setStatus(null);
     }

@@ -93,6 +93,7 @@ model Topic {
 
   materials    Material[]
   evaluations  Evaluation[]
+  progress     TopicProgress[]
 
   @@index([courseId])
   @@map("topics")
@@ -120,9 +121,22 @@ model Enrollment {
   courseId   String
   course     Course   @relation(fields: [courseId], references: [id])
   enrolledAt DateTime @default(now())
+  topicProgress TopicProgress[]
 
   @@unique([studentId, courseId]) // evita doble inscripción (HU2)
   @@map("enrollments")
+}
+
+model TopicProgress {
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  topicId      String
+  topic        Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  viewedAt     DateTime @default(now())
+
+  @@id([enrollmentId, topicId])
+  @@index([topicId])
+  @@map("topic_progress")
 }
 
 model Evaluation {

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { CourseProgress, getCourseProgress, setTopicViewed } from '../api/progress';
+import CourseProgressBar from '../components/CourseProgressBar';
 
 interface Material {
   id: string;
@@ -63,9 +65,15 @@ export default function CourseLearningPage() {
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<CourseProgress | null>(null);
+  const [savingTopicId, setSavingTopicId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
+    setCourse(null);
+    setProgress(null);
+    setEvaluations([]);
+    setError(null);
 
     async function loadCourseContent() {
       try {
@@ -74,8 +82,18 @@ export default function CourseLearningPage() {
         setCourse(courseData);
 
         if (courseData.isEnrolled) {
-          const { data } = await api.get<Evaluation[]>(`/courses/${id}/evaluations`);
-          if (active) setEvaluations(data);
+          await Promise.all([
+            getCourseProgress(courseData.id).then((data) => {
+              if (active) setProgress(data);
+            }).catch((err) => {
+              if (active) setError(err.response?.data?.message ?? 'No se pudo cargar el avance del curso.');
+            }),
+            api.get<Evaluation[]>(`/courses/${id}/evaluations`).then(({ data }) => {
+              if (active) setEvaluations(data);
+            }).catch((err) => {
+              if (active) setError(err.response?.data?.message ?? 'No se pudieron cargar las evaluaciones.');
+            }),
+          ]);
         }
       } catch (err: any) {
         if (active) {
@@ -87,6 +105,19 @@ export default function CourseLearningPage() {
     loadCourseContent();
     return () => { active = false; };
   }, [id]);
+
+  async function toggleTopicViewed(topicId: string) {
+    if (!course || !progress || savingTopicId) return;
+    setSavingTopicId(topicId);
+    setError(null);
+    try {
+      setProgress(await setTopicViewed(course.id, topicId, !progress.viewedTopicIds.includes(topicId)));
+    } catch (err: any) {
+      setError(err.response?.data?.message ?? 'No se pudo guardar el avance. Intentá nuevamente.');
+    } finally {
+      setSavingTopicId(null);
+    }
+  }
 
   if (error && !course) return <p className="p-6 text-red-600">{error}</p>;
   if (!course) return <p className="p-6">Cargando curso...</p>;
@@ -115,6 +146,9 @@ export default function CourseLearningPage() {
           {course.technology && <><span>·</span><span>{course.technology}</span></>}
         </div>
         <h1 className="text-2xl font-bold text-slate-900">{course.name}</h1>
+        {progress ? <CourseProgressBar progress={progress} /> : (
+          <p className="text-sm text-slate-500">{error ? 'Avance no disponible.' : 'Cargando avance...'}</p>
+        )}
       </header>
 
       {error && <p className="text-sm text-red-700">{error}</p>}
@@ -125,9 +159,22 @@ export default function CourseLearningPage() {
           <p className="text-slate-500">Todavía no hay clases cargadas.</p>
         ) : course.topics.map((topic) => {
           const topicEvaluations = evaluations.filter((evaluation) => evaluation.topicId === topic.id);
+          const viewed = progress?.viewedTopicIds.includes(topic.id) ?? false;
           return (
-            <article key={topic.id} id={`tema-${topic.id}`} className="border border-slate-200 rounded-lg p-4 space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900">{topic.order}. {topic.title}</h3>
+            <article key={topic.id} id={`tema-${topic.id}`} className={`border rounded-lg p-4 space-y-4 ${viewed ? 'border-emerald-500' : 'border-slate-200'}`}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold text-slate-900 break-words min-w-0">{topic.order}. {topic.title}</h3>
+                <label className={`inline-flex items-center gap-2 text-sm ${viewed ? 'text-emerald-700' : 'text-slate-700'}`}>
+                  <input
+                    type="checkbox"
+                    checked={viewed}
+                    disabled={!progress || savingTopicId !== null}
+                    onChange={() => toggleTopicViewed(topic.id)}
+                    className="h-4 w-4 accent-emerald-600"
+                  />
+                  {savingTopicId === topic.id ? 'Guardando...' : viewed ? 'Visto (desmarcar)' : 'Marcar como visto'}
+                </label>
+              </div>
 
               {topic.videoUrl && (
                 <div className="space-y-2">
