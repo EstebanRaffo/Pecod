@@ -218,6 +218,7 @@ model EvaluationAttempt {
   attemptNumber Int // 1 o 2 (HU12: máximo 2 intentos en V1)
   score         Int
   passed        Boolean
+  evaluationSnapshot Json
   createdAt     DateTime @default(now())
 
   @@unique([evaluationId, studentId, attemptNumber])

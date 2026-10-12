@@ -79,6 +79,51 @@ describe('EvaluationsService', () => {
     });
   });
 
+  describe('editing evaluation text', () => {
+    const evaluation = {
+      id: 'eval-1', courseId: 'course-1', title: 'Parcial', minScore: 60,
+      questions: [{ id: 'q1', text: 'Original', options: [{ id: 'o1', text: 'Respuesta', isCorrect: true }] }],
+    };
+
+    beforeEach(() => {
+      prisma.evaluation.findUnique.mockResolvedValue(evaluation);
+      prisma.course.findUnique.mockResolvedValue({ professorId: professor.userId });
+      prisma.evaluation.update.mockResolvedValue(evaluation);
+    });
+
+    it('returns the detail only to the owner', async () => {
+      expect(await service.getForEditing('eval-1', professor)).toEqual(evaluation);
+      prisma.course.findUnique.mockResolvedValue({ professorId: 'other' });
+      await expect(service.getForEditing('eval-1', professor)).rejects.toThrow(ForbiddenException);
+      await expect(service.updateText('eval-1', professor, 'q1', 'New', 'question')).rejects.toThrow(ForbiddenException);
+      expect(prisma.evaluation.update).not.toHaveBeenCalled();
+    });
+
+    it.each(['question', 'option'] as const)('updates only the %s text without changing grading or attempts', async (kind) => {
+      const targetId = kind === 'question' ? 'q1' : 'o1';
+      await service.updateText('eval-1', professor, targetId, 'Nuevo texto', kind);
+      expect(prisma.evaluation.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'eval-1' },
+        data: { questions: { update: {
+          where: { id: 'q1' },
+          data: kind === 'question' ? { text: 'Nuevo texto' }
+            : { options: { update: { where: { id: 'o1' }, data: { text: 'Nuevo texto' } } } },
+        } } },
+      }));
+      expect(prisma.evaluationAttempt.update).not.toHaveBeenCalled();
+    });
+
+    it.each(['question', 'option'] as const)('rejects a %s from another evaluation', async (kind) => {
+      await expect(service.updateText('eval-1', professor, 'foreign-id', 'New', kind)).rejects.toThrow(NotFoundException);
+      expect(prisma.evaluation.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects blank text', async () => {
+      await expect(service.updateText('eval-1', professor, 'q1', '  ', 'question')).rejects.toThrow(BadRequestException);
+      expect(prisma.evaluation.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('submit (HU12)', () => {
     const evaluation = {
       id: 'eval-1',
@@ -203,6 +248,80 @@ describe('EvaluationsService', () => {
 
       const serialized = JSON.stringify(result);
       expect(serialized).not.toContain('isCorrect');
+    });
+  });
+
+  describe('preserving graded evaluations', () => {
+    const original = {
+      id: 'eval-1', courseId: 'course-1', title: 'Parcial', minScore: 60,
+      questions: [{ id: 'q1', text: 'Original question', options: [
+        { id: 'o1', text: 'Original answer', isCorrect: true },
+        { id: 'o2', text: 'Wrong answer', isCorrect: false },
+      ] }],
+    };
+    const edited = {
+      ...original,
+      questions: [{ ...original.questions[0], text: 'Edited question', options: [
+        { ...original.questions[0].options[0], text: 'Edited answer' },
+        original.questions[0].options[1],
+      ] }],
+    };
+
+    beforeEach(() => {
+      prisma.evaluation.findUnique.mockResolvedValue(edited);
+      prisma.enrollment.findUnique.mockResolvedValue({ id: 'enr-1' });
+      prisma.evaluationAttempt.create.mockImplementation(({ data }: any) => Promise.resolve(data));
+    });
+
+    it('students without a grade see the edited text', async () => {
+      prisma.evaluationAttempt.findMany.mockResolvedValue([]);
+      const result = await service.getForTaking('eval-1', student);
+      expect(result.questions[0].text).toBe('Edited question');
+      expect(result.questions[0].options[0].text).toBe('Edited answer');
+    });
+
+    it('students with a failed grade see the original text on their second attempt', async () => {
+      prisma.evaluationAttempt.findMany.mockResolvedValue([
+        { attemptNumber: 1, score: 0, passed: false, evaluationSnapshot: original },
+      ]);
+      const result = await service.getForTaking('eval-1', student);
+      expect(result.questions[0].text).toBe('Original question');
+      expect(result.questions[0].options[0].text).toBe('Original answer');
+      expect(JSON.stringify(result)).not.toContain('isCorrect');
+      expect(JSON.stringify(result)).not.toContain('evaluationSnapshot');
+    });
+
+    it('stores the version taken and does not expose the answer-key snapshot', async () => {
+      prisma.evaluationAttempt.findMany.mockResolvedValue([]);
+      const result = await service.submit('eval-1', student, {
+        answers: [{ questionId: 'q1', selectedOptionId: 'o1' }],
+      });
+      expect(prisma.evaluationAttempt.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+        evaluationSnapshot: { id: edited.id, title: edited.title, minScore: edited.minScore, questions: edited.questions },
+      }) });
+      expect(JSON.stringify(result)).not.toContain('evaluationSnapshot');
+      expect(JSON.stringify(result)).not.toContain('isCorrect');
+    });
+
+    it('grades a second attempt with the preserved version and leaves the previous grade untouched', async () => {
+      const previousAttempt = { attemptNumber: 1, score: 0, passed: false, evaluationSnapshot: original };
+      prisma.evaluationAttempt.findMany.mockResolvedValue([previousAttempt]);
+      prisma.evaluation.findUnique.mockResolvedValue({ ...edited, minScore: 100, questions: [
+        { ...edited.questions[0], options: [
+          { ...edited.questions[0].options[0], isCorrect: false },
+          { ...edited.questions[0].options[1], isCorrect: true },
+        ] },
+      ] });
+      const result = await service.submit('eval-1', student, {
+        answers: [{ questionId: 'q1', selectedOptionId: 'o1' }],
+      });
+      expect(result.score).toBe(100);
+      expect(result.passed).toBe(true);
+      expect(prisma.evaluationAttempt.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+        evaluationSnapshot: { id: original.id, title: original.title, minScore: original.minScore, questions: original.questions },
+      }) });
+      expect(previousAttempt.score).toBe(0);
+      expect(prisma.evaluationAttempt.update).not.toHaveBeenCalled();
     });
   });
 

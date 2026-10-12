@@ -8,6 +8,7 @@ import { EvaluationsService } from './evaluations.service';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { UpdateEvaluationDto } from './dto/update-evaluation.dto';
 import { SubmitAttemptDto } from './dto/submit-attempt.dto';
+import { UpdateEvaluationTextDto } from './dto/update-evaluation-text.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller()
@@ -40,6 +41,34 @@ export class EvaluationsController {
     @Body() dto: UpdateEvaluationDto,
   ) {
     return this.evaluationsService.update(evaluationId, user, dto);
+  }
+
+  @Get('evaluations/:evaluationId')
+  @Roles(Role.PROFESSOR)
+  getForEditing(@Param('evaluationId') evaluationId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.evaluationsService.getForEditing(evaluationId, user);
+  }
+
+  @Patch('evaluations/:evaluationId/questions/:questionId')
+  @Roles(Role.PROFESSOR)
+  updateQuestion(
+    @Param('evaluationId') evaluationId: string,
+    @Param('questionId') questionId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateEvaluationTextDto,
+  ) {
+    return this.evaluationsService.updateText(evaluationId, user, questionId, dto.text, 'question');
+  }
+
+  @Patch('evaluations/:evaluationId/options/:optionId')
+  @Roles(Role.PROFESSOR)
+  updateOption(
+    @Param('evaluationId') evaluationId: string,
+    @Param('optionId') optionId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateEvaluationTextDto,
+  ) {
+    return this.evaluationsService.updateText(evaluationId, user, optionId, dto.text, 'option');
   }
 
   // HU12

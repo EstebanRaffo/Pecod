@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
@@ -12,6 +12,17 @@ import { UpdateEvaluationDto } from './dto/update-evaluation.dto';
 import { SubmitAttemptDto } from './dto/submit-attempt.dto';
 
 const MAX_ATTEMPTS = 2; // HU12: "el Alumno tiene hasta 2 intentos por evaluación en V1"
+
+interface EvaluationSnapshot {
+  id: string;
+  title: string;
+  minScore: number;
+  questions: {
+    id: string;
+    text: string;
+    options: { id: string; text: string; isCorrect: boolean }[];
+  }[];
+}
 
 @Injectable()
 export class EvaluationsService {
@@ -82,6 +93,44 @@ export class EvaluationsService {
     });
   }
 
+  async getForEditing(evaluationId: string, professor: AuthenticatedUser) {
+    const evaluation = await this.getEvaluationOrThrow(evaluationId);
+    const course = await this.prisma.course.findUnique({ where: { id: evaluation.courseId } });
+    if (!course || course.professorId !== professor.userId) {
+      throw new ForbiddenException('No podés modificar una evaluación de un curso que no te pertenece.');
+    }
+    return evaluation;
+  }
+
+  async updateText(
+    evaluationId: string,
+    professor: AuthenticatedUser,
+    targetId: string,
+    text: string,
+    kind: 'question' | 'option',
+  ) {
+    const evaluation = await this.getForEditing(evaluationId, professor);
+    if (!text?.trim()) throw new BadRequestException('El texto no puede estar vacío.');
+    const question = evaluation.questions.find((item) =>
+      kind === 'question' ? item.id === targetId : item.options.some((option) => option.id === targetId),
+    );
+    if (!question) throw new NotFoundException('Pregunta o respuesta no encontrada en esta evaluación.');
+    return this.prisma.evaluation.update({
+      where: { id: evaluationId },
+      data: {
+        questions: {
+          update: {
+            where: { id: question.id },
+            data: kind === 'question'
+              ? { text }
+              : { options: { update: { where: { id: targetId }, data: { text } } } },
+          },
+        },
+      },
+      include: { questions: { orderBy: { order: 'asc' }, include: { options: true } } },
+    });
+  }
+
   // HU12: trae la evaluación para que el Alumno la rinda, sin revelar cuál opción es correcta.
   async getForTaking(evaluationId: string, student: AuthenticatedUser) {
     const evaluation = await this.getEvaluationOrThrow(evaluationId);
@@ -89,16 +138,18 @@ export class EvaluationsService {
 
     const attempts = await this.prisma.evaluationAttempt.findMany({
       where: { evaluationId, studentId: student.userId },
+      orderBy: { attemptNumber: 'asc' },
     });
     this.assertCanAttempt(attempts);
+    const version = this.getAttemptVersion(evaluation, attempts);
 
     return {
-      id: evaluation.id,
-      title: evaluation.title,
-      minScore: evaluation.minScore,
+      id: version.id,
+      title: version.title,
+      minScore: version.minScore,
       attemptsUsed: attempts.length,
       maxAttempts: MAX_ATTEMPTS,
-      questions: evaluation.questions.map((q) => ({
+      questions: version.questions.map((q) => ({
         id: q.id,
         text: q.text,
         options: q.options.map((o) => ({ id: o.id, text: o.text })), // sin isCorrect
@@ -113,11 +164,13 @@ export class EvaluationsService {
 
     const attempts = await this.prisma.evaluationAttempt.findMany({
       where: { evaluationId, studentId: student.userId },
+      orderBy: { attemptNumber: 'asc' },
     });
     this.assertCanAttempt(attempts);
+    const version = this.getAttemptVersion(evaluation, attempts);
 
     let correctCount = 0;
-    const feedback = evaluation.questions.map((question) => {
+    const feedback = version.questions.map((question) => {
       const answer = dto.answers.find((a) => a.questionId === question.id);
       const correctOption = question.options.find((o) => o.isCorrect);
       const isCorrect = !!answer && answer.selectedOptionId === correctOption?.id;
@@ -129,8 +182,8 @@ export class EvaluationsService {
       };
     });
 
-    const score = Math.round((correctCount / evaluation.questions.length) * 100);
-    const passed = score >= evaluation.minScore;
+    const score = Math.round((correctCount / version.questions.length) * 100);
+    const passed = score >= version.minScore;
 
     const attempt = await this.prisma.evaluationAttempt.create({
       data: {
@@ -139,16 +192,37 @@ export class EvaluationsService {
         attemptNumber: attempts.length + 1,
         score,
         passed,
+        evaluationSnapshot: {
+          id: version.id,
+          title: version.title,
+          minScore: version.minScore,
+          questions: version.questions.map((question) => ({
+            id: question.id,
+            text: question.text,
+            options: question.options.map((option) => ({
+              id: option.id, text: option.text, isCorrect: option.isCorrect,
+            })),
+          })),
+        },
       },
     });
 
-    return { attempt, score, passed, feedback };
+    const { evaluationSnapshot, ...publicAttempt } = attempt;
+    return { attempt: publicAttempt, score, passed, feedback };
+  }
+
+  private getAttemptVersion(
+    evaluation: EvaluationSnapshot,
+    attempts: { evaluationSnapshot?: Prisma.JsonValue }[],
+  ): EvaluationSnapshot {
+    const snapshot = attempts[0]?.evaluationSnapshot;
+    return snapshot ? snapshot as unknown as EvaluationSnapshot : evaluation;
   }
 
   private async getEvaluationOrThrow(evaluationId: string) {
     const evaluation = await this.prisma.evaluation.findUnique({
       where: { id: evaluationId },
-      include: { questions: { include: { options: true } } },
+      include: { questions: { orderBy: { order: 'asc' }, include: { options: true } } },
     });
     if (!evaluation) throw new NotFoundException('Evaluación no encontrada.');
     return evaluation;

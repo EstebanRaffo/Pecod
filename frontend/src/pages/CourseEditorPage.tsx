@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import TopicMediaUploader from '../components/TopicMediaUploader';
 import EvaluationCreator from '../components/EvaluationCreator';
+import EvaluationEditor from '../components/EvaluationEditor';
+import { Eye } from 'lucide-react';
 
 // ── Icono de lápiz (edición) ────────────────────────────────────────────────
 function PencilIcon() {
@@ -88,6 +90,7 @@ export default function CourseEditorPage() {
   const { id } = useParams<{ id: string }>();
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [expandedEvaluationId, setExpandedEvaluationId] = useState<string | null>(null);
 
   // Estados de edición por sección
   const [editingName, setEditingName] = useState(false);
@@ -485,8 +488,23 @@ export default function CourseEditorPage() {
         <ul className="mb-3 space-y-1">
           {evaluations.map((ev) => (
             <li key={ev.id} className="border rounded px-3 py-2 text-sm">
-              <span className="font-medium">{ev.title}</span>
-              <span className="text-slate-500 ml-2">— mínimo para aprobar: {ev.minScore}</span>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 break-words">
+                  <span className="font-medium">{ev.title}</span>
+                  <span className="text-slate-500 ml-2">— mínimo para aprobar: {ev.minScore}</span>
+                </div>
+                <button type="button" title="Ver evaluación" aria-label={`Ver ${ev.title}`}
+                  aria-expanded={expandedEvaluationId === ev.id} aria-controls={`evaluation-${ev.id}`}
+                  onClick={() => setExpandedEvaluationId(expandedEvaluationId === ev.id ? null : ev.id)}
+                  className="shrink-0 p-1.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800">
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+              {expandedEvaluationId === ev.id && (
+                <div id={`evaluation-${ev.id}`}>
+                  <EvaluationEditor key={ev.id} evaluationId={ev.id} />
+                </div>
+              )}
             </li>
           ))}
           {evaluations.length === 0 && (

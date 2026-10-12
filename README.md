@@ -126,6 +126,21 @@ npm run start:dev
 
 Pruebas: `npm test -- --runInBand topics.service.spec notifications.service.spec` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/notifications.cy.ts` desde `frontend`. El spec comprueba recepcion en una sesion abierta, orden, lectura persistente, navegacion al tema, vista movil, exclusiones y aislamiento entre alumnos.
 
+### Edicion de preguntas y respuestas de evaluaciones
+
+En el listado de Evaluaciones del curso del Profesor, el icono Ver despliega las preguntas y respuestas. Cada texto permite Editar, Guardar o Cancelar; cancelar descarta el borrador y guardar modifica solo el texto, sin cambiar la respuesta correcta.
+
+Los alumnos sin intentos ven el contenido actualizado. Desde el primer intento con nota se conserva una copia de preguntas, respuestas y criterio de aprobacion; un segundo intento usa esa misma version. La edicion no modifica las notas ni los intentos anteriores, y mantiene las restricciones de evaluacion aprobada y maximo de dos intentos.
+
+Antes de usar esta funcionalidad en una base existente, ejecutar `npx prisma migrate deploy` y `npm run prisma:generate` desde `backend`. La migracion completa las copias de los intentos existentes con el contenido disponible al aplicarla; no puede recuperar cambios historicos previos que nunca se almacenaron.
+
+Endpoints exclusivos del Profesor propietario (base `/api`):
+- `GET /evaluations/:evaluationId`: detalle con preguntas y opciones.
+- `PATCH /evaluations/:evaluationId/questions/:questionId`: texto de una pregunta, cuerpo `{ "text": "..." }`.
+- `PATCH /evaluations/:evaluationId/options/:optionId`: texto de una respuesta, mismo cuerpo.
+
+Pruebas: `npm test -- --runInBand evaluations.service.spec.ts` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/evaluation-attempts.cy.ts` desde `frontend`.
+
 ## Testing
 
 Cada test está comentado con la HU y el criterio de aceptación puntual que verifica — la idea es que la trazabilidad HU → criterio → test sea directa, no que haya que adivinarla.
