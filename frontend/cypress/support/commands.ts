@@ -109,7 +109,7 @@ Cypress.Commands.add('seedFullScenario', () => {
                             name: `Curso Cypress ${unique}`,
                             description: 'Curso de prueba generado por Cypress',
                             category: 'QA',
-                            tools: 'Cypress',
+                            technology: 'Cypress',
                           },
                         })
                         .then((courseRes) => {

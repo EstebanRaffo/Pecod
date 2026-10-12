@@ -7,7 +7,7 @@ interface Course {
   name: string;
   description: string;
   category: string;
-  tools?: string | null;
+  technology?: string | null;
 }
 
 export default function CatalogPage() {
@@ -87,9 +87,9 @@ export default function CatalogPage() {
             >
               <div className="flex items-center justify-between text-xs uppercase text-slate-500 mb-1">
                 <span>{course.category}</span>
-                {course.tools && (
+                {course.technology && (
                   <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[11px] font-medium normal-case">
-                    {course.tools}
+                    {course.technology}
                   </span>
                 )}
               </div>

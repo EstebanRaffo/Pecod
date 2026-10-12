@@ -14,7 +14,7 @@ export class CoursesService {
     private uploadsService: UploadsService,
   ) {}
 
-  // HU1: catálogo con filtro combinable por categoría y/o tecnología.
+  // HU1: catálogo con filtro combinable por área y/o tecnología.
   // El catálogo respeta el aislamiento multi-tenant: cada usuario ve solo
   // los cursos de su institución (el ADMIN, con alcance global, ve todos).
   async catalog(user: AuthenticatedUser, query: CatalogQueryDto) {
@@ -24,7 +24,7 @@ export class CoursesService {
         ...(user.role !== Role.ADMIN ? { institutionId: user.institutionId! } : {}),
         ...(query.category ? { category: { equals: query.category, mode: 'insensitive' } } : {}),
         ...(query.technology
-          ? { tools: { contains: query.technology, mode: 'insensitive' } }
+          ? { technology: { contains: query.technology, mode: 'insensitive' } }
           : {}),
       },
       orderBy: { createdAt: 'desc' },
@@ -104,12 +104,9 @@ export class CoursesService {
 
   // HU5: alta de curso. Queda sin publicar hasta que el Profesor lo publique (HU8).
   create(user: AuthenticatedUser, dto: CreateCourseDto) {
-    const { technology, ...rest } = dto;
-    const tools = dto.tools ?? technology;
     return this.prisma.course.create({
       data: {
-        ...rest,
-        ...(tools !== undefined ? { tools } : {}),
+        ...dto,
         professorId: user.userId,
         institutionId: user.institutionId!,
         isPublished: false,
@@ -120,14 +117,9 @@ export class CoursesService {
   // HU8: editar curso existente. Solo el Profesor dueño del curso puede editarlo.
   async update(id: string, user: AuthenticatedUser, dto: UpdateCourseDto) {
     const course = await this.getOwnedCourseOrThrow(id, user);
-    const { technology, ...rest } = dto;
-    const tools = dto.tools !== undefined ? dto.tools : technology;
     return this.prisma.course.update({
       where: { id: course.id },
-      data: {
-        ...rest,
-        ...(tools !== undefined ? { tools } : {}),
-      },
+      data: dto,
     });
   }
 

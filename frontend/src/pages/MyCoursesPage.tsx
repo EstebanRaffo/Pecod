@@ -40,7 +40,7 @@ export default function MyCoursesPage() {
         {enrollments.map(({ id, course }) => (
           <Link
             key={id}
-            to={`/cursos/${course.id}`}
+            to={`/mis-cursos/${course.id}`}
             className="block border rounded-lg p-4 hover:shadow-md transition"
           >
             <div className="flex items-center justify-between">

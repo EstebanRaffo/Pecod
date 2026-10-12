@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,19 +9,14 @@ interface Topic {
   order: number;
 }
 
-interface Evaluation {
-  id: string;
-  title: string;
-  minScore: number;
-}
-
 interface CourseDetail {
   id: string;
   name: string;
   description: string;
   category: string;
+  technology: string | null;
+  academicRequirements: string | null;
   skills: string | null;
-  tools: string | null;
   isEnrolled: boolean;
   topics: Topic[];
 }
@@ -31,16 +26,12 @@ export default function CourseDetailPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [course, setCourse] = useState<CourseDetail | null>(null);
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
     api.get<CourseDetail>(`/courses/${id}`).then(({ data }) => {
       setCourse(data);
-      if (data.isEnrolled) {
-        api.get<Evaluation[]>(`/courses/${id}/evaluations`).then((res) => setEvaluations(res.data));
-      }
     });
   }, [id]);
 
@@ -62,18 +53,21 @@ export default function CourseDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <span className="text-xs uppercase text-slate-500">{course.category}</span>
+      <div className="flex flex-wrap items-center gap-x-2 text-xs uppercase text-slate-500 mb-1">
+        <span>{course.category}</span>
+        {course.technology && <><span>·</span><span>{course.technology}</span></>}
+      </div>
       <h1 className="text-3xl font-semibold mb-2">{course.name}</h1>
       <p className="text-slate-700 mb-4">{course.description}</p>
 
-      {course.tools && (
-        <p className="mb-1">
-          <strong>Herramientas necesarias:</strong> {course.tools}
+      {course.academicRequirements && (
+        <p className="mb-2 whitespace-pre-wrap">
+          <strong>Requerimientos Académicos:</strong> {course.academicRequirements}
         </p>
       )}
       {course.skills && (
-        <p className="mb-4">
-          <strong>Aptitudes a adquirir:</strong> {course.skills}
+        <p className="mb-4 whitespace-pre-wrap">
+          <strong>Aptitudes adquiridas al finalizar el curso:</strong> {course.skills}
         </p>
       )}
 
@@ -86,25 +80,10 @@ export default function CourseDetailPage() {
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
-      {course.isEnrolled && evaluations.length > 0 && (
-        <div className="mb-6">
-          <h2 className="font-semibold text-lg mb-2">Evaluaciones</h2>
-          <ul className="space-y-1">
-            {evaluations.map((ev) => (
-              <li key={ev.id}>
-                <Link to={`/evaluaciones/${ev.id}`} className="text-slate-800 underline">
-                  {ev.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {user?.role === 'STUDENT' &&
         (course.isEnrolled ? (
           <button
-            onClick={() => navigate('/mis-cursos')}
+            onClick={() => navigate(`/mis-cursos/${course.id}`)}
             className="bg-slate-800 text-white px-4 py-2 rounded"
           >
             Ir al contenido

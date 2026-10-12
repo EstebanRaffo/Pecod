@@ -15,13 +15,13 @@ export class CreateCourseDto {
 
   @IsOptional()
   @IsString()
-  skills?: string; // aptitudes que se adquieren (HU4)
+  academicRequirements?: string;
 
   @IsOptional()
   @IsString()
-  tools?: string; // herramientas necesarias (HU4)
+  skills?: string;
 
   @IsOptional()
   @IsString()
-  technology?: string; // tecnología (HU5 / HU1)
+  technology?: string;
 }

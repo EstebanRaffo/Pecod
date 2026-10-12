@@ -48,7 +48,9 @@ interface CourseDetail {
   name: string;
   description: string;
   category: string;
-  tools: string | null;
+  technology: string | null;
+  academicRequirements: string | null;
+  skills: string | null;
   isPublished: boolean;
   topics: Topic[];
 }
@@ -91,7 +93,9 @@ export default function CourseEditorPage() {
   const [editingName, setEditingName] = useState(false);
   const [editingDescription, setEditingDescription] = useState(false);
   const [editingCategory, setEditingCategory] = useState(false);
-  const [editingTools, setEditingTools] = useState(false);
+  const [editingTechnology, setEditingTechnology] = useState(false);
+  const [editingAcademicRequirements, setEditingAcademicRequirements] = useState(false);
+  const [editingSkills, setEditingSkills] = useState(false);
   const [editingTopics, setEditingTopics] = useState(false);
   const [editingEvaluations, setEditingEvaluations] = useState(false);
 
@@ -99,7 +103,9 @@ export default function CourseEditorPage() {
   const [draftName, setDraftName] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
   const [draftCategory, setDraftCategory] = useState('');
-  const [draftTools, setDraftTools] = useState('');
+  const [draftTechnology, setDraftTechnology] = useState('');
+  const [draftAcademicRequirements, setDraftAcademicRequirements] = useState('');
+  const [draftSkills, setDraftSkills] = useState('');
   const [newTopicTitle, setNewTopicTitle] = useState('');
 
   // Modal despublicar
@@ -146,10 +152,22 @@ export default function CourseEditorPage() {
     setEditingCategory(false);
   }
 
-  async function handleSaveTools(e: FormEvent) {
+  async function handleSaveTechnology(e: FormEvent) {
     e.preventDefault();
-    await saveField({ tools: draftTools || null });
-    setEditingTools(false);
+    await saveField({ technology: draftTechnology || null });
+    setEditingTechnology(false);
+  }
+
+  async function handleSaveAcademicRequirements(e: FormEvent) {
+    e.preventDefault();
+    await saveField({ academicRequirements: draftAcademicRequirements || null });
+    setEditingAcademicRequirements(false);
+  }
+
+  async function handleSaveSkills(e: FormEvent) {
+    e.preventDefault();
+    await saveField({ skills: draftSkills || null });
+    setEditingSkills(false);
   }
 
   async function handleAddTopic(e: FormEvent) {
@@ -305,15 +323,15 @@ export default function CourseEditorPage() {
       <section className="border rounded-lg p-4">
         <SectionHeader
           title="Tecnología"
-          onEdit={() => { setDraftTools(course.tools ?? ''); setEditingTools(true); }}
-          editing={editingTools}
+          onEdit={() => { setDraftTechnology(course.technology ?? ''); setEditingTechnology(true); }}
+          editing={editingTechnology}
         />
-        {editingTools ? (
-          <form onSubmit={handleSaveTools} className="flex gap-2">
+        {editingTechnology ? (
+          <form onSubmit={handleSaveTechnology} className="flex gap-2">
             <input
               autoFocus
-              value={draftTools}
-              onChange={(e) => setDraftTools(e.target.value)}
+              value={draftTechnology}
+              onChange={(e) => setDraftTechnology(e.target.value)}
               placeholder="Ej: React, Node.js"
               className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm"
             />
@@ -322,14 +340,82 @@ export default function CourseEditorPage() {
             </button>
             <button
               type="button"
-              onClick={() => setEditingTools(false)}
+              onClick={() => setEditingTechnology(false)}
               className="border px-3 py-2 rounded text-sm"
             >
               Cancelar
             </button>
           </form>
         ) : (
-          <p className="text-slate-800">{course.tools ?? <span className="text-slate-400 italic">Sin especificar</span>}</p>
+          <p className="text-slate-800">{course.technology ?? <span className="text-slate-400 italic">Sin especificar</span>}</p>
+        )}
+      </section>
+
+      {/* ── Requerimientos académicos ──────────────────────────────────── */}
+      <section className="border rounded-lg p-4">
+        <SectionHeader
+          title="Requerimientos Académicos"
+          onEdit={() => { setDraftAcademicRequirements(course.academicRequirements ?? ''); setEditingAcademicRequirements(true); }}
+          editing={editingAcademicRequirements}
+        />
+        {editingAcademicRequirements ? (
+          <form onSubmit={handleSaveAcademicRequirements} className="space-y-2">
+            <textarea
+              autoFocus
+              rows={3}
+              value={draftAcademicRequirements}
+              onChange={(e) => setDraftAcademicRequirements(e.target.value)}
+              className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+            />
+            <div className="flex gap-2">
+              <button type="submit" className="bg-slate-800 text-white px-3 py-2 rounded text-sm">
+                Guardar
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingAcademicRequirements(false)}
+                className="border px-3 py-2 rounded text-sm"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="text-slate-800 whitespace-pre-wrap">{course.academicRequirements ?? <span className="text-slate-400 italic">Sin especificar</span>}</p>
+        )}
+      </section>
+
+      {/* ── Aptitudes adquiridas ───────────────────────────────────────── */}
+      <section className="border rounded-lg p-4">
+        <SectionHeader
+          title="Aptitudes Adquiridas al finalizar el curso"
+          onEdit={() => { setDraftSkills(course.skills ?? ''); setEditingSkills(true); }}
+          editing={editingSkills}
+        />
+        {editingSkills ? (
+          <form onSubmit={handleSaveSkills} className="space-y-2">
+            <textarea
+              autoFocus
+              rows={3}
+              value={draftSkills}
+              onChange={(e) => setDraftSkills(e.target.value)}
+              className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+            />
+            <div className="flex gap-2">
+              <button type="submit" className="bg-slate-800 text-white px-3 py-2 rounded text-sm">
+                Guardar
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingSkills(false)}
+                className="border px-3 py-2 rounded text-sm"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="text-slate-800 whitespace-pre-wrap">{course.skills ?? <span className="text-slate-400 italic">Sin especificar</span>}</p>
         )}
       </section>
 
@@ -411,6 +497,7 @@ export default function CourseEditorPage() {
         {editingEvaluations ? (
           <EvaluationCreator
             courseId={course.id}
+            topics={course.topics}
             onCreated={() => {
               loadEvaluations();
               setEditingEvaluations(false);

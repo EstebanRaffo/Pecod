@@ -12,6 +12,7 @@ interface QuestionDraft {
 
 interface Props {
   courseId: string;
+  topics: Array<{ id: string; title: string; order: number }>;
   onCreated: () => void;
 }
 
@@ -25,9 +26,10 @@ function emptyQuestion(): QuestionDraft {
   };
 }
 
-export default function EvaluationCreator({ courseId, onCreated }: Props) {
+export default function EvaluationCreator({ courseId, topics, onCreated }: Props) {
   const [title, setTitle] = useState('');
   const [minScore, setMinScore] = useState(60);
+  const [topicId, setTopicId] = useState('');
   const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -75,9 +77,15 @@ export default function EvaluationCreator({ courseId, onCreated }: Props) {
     e.preventDefault();
     setError(null);
     try {
-      await api.post(`/courses/${courseId}/evaluations`, { title, minScore, questions });
+      await api.post(`/courses/${courseId}/evaluations`, {
+        title,
+        minScore,
+        topicId: topicId || null,
+        questions,
+      });
       setTitle('');
       setMinScore(60);
+      setTopicId('');
       setQuestions([emptyQuestion()]);
       setOpen(false);
       onCreated();
@@ -114,6 +122,19 @@ export default function EvaluationCreator({ courseId, onCreated }: Props) {
           title="Puntaje mínimo de aprobación"
         />
       </div>
+
+      <select
+        value={topicId}
+        onChange={(e) => setTopicId(e.target.value)}
+        className="w-full border border-slate-300 rounded px-3 py-2"
+      >
+        <option value="">Evaluación de cierre del curso</option>
+        {topics.map((topic) => (
+          <option key={topic.id} value={topic.id}>
+            {topic.order}. {topic.title}
+          </option>
+        ))}
+      </select>
 
       {questions.map((q, qIndex) => (
         <div key={qIndex} className="border rounded p-3 space-y-2">

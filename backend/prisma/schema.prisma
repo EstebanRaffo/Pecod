@@ -62,9 +62,10 @@ model Course {
 
   name        String
   description String
-  category    String // área de conocimiento / tecnología (HU1 filtro)
-  skills      String? // aptitudes que se adquieren (HU4)
-  tools       String? // herramientas necesarias (HU4)
+  category             String // área de conocimiento (HU1 filtro)
+  technology           String? // tecnología del curso
+  academicRequirements String? // requerimientos académicos
+  skills               String? // aptitudes que se adquieren
   isPublished Boolean  @default(false) // HU5 (alta) / HU8 (despublicar-republicar)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

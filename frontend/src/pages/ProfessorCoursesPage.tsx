@@ -6,7 +6,7 @@ interface Course {
   id: string;
   name: string;
   category: string;
-  tools?: string | null;
+  technology?: string | null;
   isPublished: boolean;
 }
 
@@ -16,6 +16,8 @@ export default function ProfessorCoursesPage() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [technology, setTechnology] = useState('');
+  const [academicRequirements, setAcademicRequirements] = useState('');
+  const [skills, setSkills] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function loadCourses() {
@@ -34,12 +36,15 @@ export default function ProfessorCoursesPage() {
         description,
         category,
         technology,
-        tools: technology,
+        academicRequirements,
+        skills,
       });
       setName('');
       setDescription('');
       setCategory('');
       setTechnology('');
+      setAcademicRequirements('');
+      setSkills('');
       loadCourses();
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'No se pudo crear el curso.');
@@ -80,6 +85,18 @@ export default function ProfessorCoursesPage() {
           required
           className="w-full border border-slate-300 rounded px-3 py-2"
         />
+        <textarea
+          placeholder="Requerimientos Académicos"
+          value={academicRequirements}
+          onChange={(e) => setAcademicRequirements(e.target.value)}
+          className="w-full border border-slate-300 rounded px-3 py-2"
+        />
+        <textarea
+          placeholder="Aptitudes adquiridas al finalizar el curso"
+          value={skills}
+          onChange={(e) => setSkills(e.target.value)}
+          className="w-full border border-slate-300 rounded px-3 py-2"
+        />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button type="submit" className="bg-slate-800 text-white px-4 py-2 rounded">
           Crear curso
@@ -96,10 +113,10 @@ export default function ProfessorCoursesPage() {
             <div>
               <div className="flex items-center gap-1.5 text-xs uppercase text-slate-500">
                 <span>{course.category}</span>
-                {course.tools && (
+                {course.technology && (
                   <>
                     <span>·</span>
-                    <span className="normal-case">{course.tools}</span>
+                    <span className="normal-case">{course.technology}</span>
                   </>
                 )}
               </div>

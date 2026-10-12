@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import CatalogPage from './pages/CatalogPage';
 import CourseDetailPage from './pages/CourseDetailPage';
 import MyCoursesPage from './pages/MyCoursesPage';
+import CourseLearningPage from './pages/CourseLearningPage';
 import ProfessorCoursesPage from './pages/ProfessorCoursesPage';
 import CourseEditorPage from './pages/CourseEditorPage';
 import AdminInstitutionsPage from './pages/AdminInstitutionsPage';
@@ -50,6 +51,14 @@ export default function App() {
           element={
             <ProtectedRoute allow={['STUDENT']}>
               <MyCoursesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mis-cursos/:id"
+          element={
+            <ProtectedRoute allow={['STUDENT']}>
+              <CourseLearningPage />
             </ProtectedRoute>
           }
         />

@@ -66,7 +66,7 @@ describe('CoursesService', () => {
       await service.catalog(student, { category: 'Frontend', technology: 'React' });
       const callArg = prisma.course.findMany.mock.calls[0][0];
       expect(callArg.where.category).toEqual({ equals: 'Frontend', mode: 'insensitive' });
-      expect(callArg.where.tools).toEqual({ contains: 'React', mode: 'insensitive' });
+      expect(callArg.where.technology).toEqual({ contains: 'React', mode: 'insensitive' });
     });
   });
 
@@ -110,7 +110,7 @@ describe('CoursesService', () => {
       );
     });
 
-    it('CA: el campo tecnología se guarda correctamente para el curso', async () => {
+    it('CA: tecnología, requerimientos y aptitudes se guardan correctamente', async () => {
       prisma.course.create.mockResolvedValue({ id: 'course-1' });
 
       await service.create(professor, {
@@ -118,11 +118,17 @@ describe('CoursesService', () => {
         description: 'Curso de React',
         category: 'Frontend',
         technology: 'React',
+        academicRequirements: 'Conocimientos básicos de programación',
+        skills: 'Desarrollar aplicaciones con React',
       });
 
       expect(prisma.course.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ tools: 'React' }),
+          data: expect.objectContaining({
+            technology: 'React',
+            academicRequirements: 'Conocimientos básicos de programación',
+            skills: 'Desarrollar aplicaciones con React',
+          }),
         }),
       );
     });
