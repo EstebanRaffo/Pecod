@@ -1,5 +1,5 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { ContentEvent, Role } from '@prisma/client';
 import { TopicsService } from './topics.service';
 import { createMockPrismaService, MockPrismaService } from '../test-utils/mock-prisma';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
@@ -29,6 +29,97 @@ describe('TopicsService', () => {
     prisma = createMockPrismaService();
     mockUploadsService.generatePresignedGetUrl.mockClear();
     service = new TopicsService(prisma as any, mockUploadsService as any);
+  });
+
+  describe('HU17: notificaciones del temario', () => {
+    const topic = {
+      id: 'topic-1', courseId: 'course-1', title: 'Introduccion', order: 1,
+      contentText: 'Texto anterior', videoUrl: null, screenRecordingUrl: null,
+      videoDurationSeconds: null, course: { professorId: 'prof-1', name: 'Programacion' },
+    };
+
+    beforeEach(() => {
+      prisma.topic.findUnique.mockResolvedValue(topic);
+      prisma.topic.update.mockResolvedValue(topic);
+      prisma.enrollment.findMany.mockResolvedValue([{ studentId: 'student-1' }, { studentId: 'student-2' }]);
+    });
+
+    it('crea una notificacion por inscripto al crear un tema', async () => {
+      prisma.course.findUnique.mockResolvedValue(topic.course);
+      prisma.topic.create.mockResolvedValue(topic);
+      await service.createTopic('course-1', professor, { title: topic.title, order: 1 });
+      expect(prisma.enrollment.findMany).toHaveBeenCalledWith({
+        where: { courseId: 'course-1', student: { role: Role.STUDENT } }, select: { studentId: true },
+      });
+      expect(prisma.notification.createMany).toHaveBeenCalledWith({ data: [
+        { studentId: 'student-1', courseId: 'course-1', topicId: 'topic-1', courseName: 'Programacion', topicTitle: topic.title, event: ContentEvent.NEW_CONTENT },
+        { studentId: 'student-2', courseId: 'course-1', topicId: 'topic-1', courseName: 'Programacion', topicTitle: topic.title, event: ContentEvent.NEW_CONTENT },
+      ] });
+      expect(prisma.$transaction).toHaveBeenCalled();
+    });
+
+    it('notifica la actualizacion del texto con el nombre actualizado del tema', async () => {
+      await service.updateTopic('topic-1', professor, { title: 'Nuevo titulo', contentText: 'Texto nuevo' });
+      expect(prisma.notification.createMany).toHaveBeenCalledWith({ data: expect.arrayContaining([
+        expect.objectContaining({ topicTitle: 'Nuevo titulo', event: ContentEvent.UPDATED_CONTENT }),
+      ]) });
+    });
+
+    it('el primer texto es contenido nuevo', async () => {
+      prisma.topic.findUnique.mockResolvedValue({ ...topic, contentText: null });
+      await service.updateTopic('topic-1', professor, { contentText: 'Primer texto' });
+      expect(prisma.notification.createMany).toHaveBeenCalledWith({ data: expect.arrayContaining([
+        expect.objectContaining({ event: ContentEvent.NEW_CONTENT }),
+      ]) });
+    });
+
+    it.each(['', '   ', 'Texto anterior', null])('no notifica texto eliminado o sin cambios: %p', async (contentText) => {
+      await service.updateTopic('topic-1', professor, { contentText });
+      expect(prisma.notification.createMany).not.toHaveBeenCalled();
+    });
+
+    it.each([false, true])('clasifica video nuevo o reemplazado (existente: %p)', async (existing) => {
+      prisma.topic.findUnique.mockResolvedValue({ ...topic, videoUrl: existing ? 'old.mp4' : null });
+      await service.attachVideo('topic-1', professor, { videoUrl: 'new.mp4', videoDurationSeconds: 60 });
+      expect(prisma.notification.createMany).toHaveBeenCalledWith({ data: expect.arrayContaining([
+        expect.objectContaining({ event: existing ? ContentEvent.UPDATED_CONTENT : ContentEvent.NEW_CONTENT }),
+      ]) });
+    });
+
+    it.each([false, true])('clasifica grabacion nueva o reemplazada (existente: %p)', async (existing) => {
+      prisma.topic.findUnique.mockResolvedValue({ ...topic, screenRecordingUrl: existing ? 'old.webm' : null });
+      await service.attachScreenRecording('topic-1', professor, { screenRecordingUrl: 'new.webm', videoDurationSeconds: 60 });
+      expect(prisma.notification.createMany).toHaveBeenCalledWith({ data: expect.arrayContaining([
+        expect.objectContaining({ event: existing ? ContentEvent.UPDATED_CONTENT : ContentEvent.NEW_CONTENT }),
+      ]) });
+    });
+
+    it('notifica el material adjunto nuevo', async () => {
+      await service.addMaterial('topic-1', professor, { fileName: 'apunte.pdf', fileUrl: 'apunte.pdf', fileType: 'pdf', sizeBytes: 1024 });
+      expect(prisma.notification.createMany).toHaveBeenCalledWith({ data: expect.arrayContaining([
+        expect.objectContaining({ event: ContentEvent.NEW_CONTENT }),
+      ]) });
+    });
+
+    it('no notifica eliminaciones de video, grabacion o material', async () => {
+      prisma.material.findUnique.mockResolvedValue({ id: 'mat-1', topicId: topic.id });
+      await service.deleteVideo(topic.id, professor);
+      await service.deleteScreenRecording(topic.id, professor);
+      await service.deleteMaterial(topic.id, 'mat-1', professor);
+      expect(prisma.notification.createMany).not.toHaveBeenCalled();
+    });
+
+    it('no crea avisos cuando no hay inscriptos', async () => {
+      prisma.enrollment.findMany.mockResolvedValue([]);
+      await service.updateTopic(topic.id, professor, { title: 'Otro titulo' });
+      expect(prisma.notification.createMany).not.toHaveBeenCalled();
+    });
+
+    it('no genera avisos si falla la modificacion', async () => {
+      prisma.topic.update.mockRejectedValue(new Error('Error de escritura'));
+      await expect(service.updateTopic(topic.id, professor, { title: 'Otro titulo' })).rejects.toThrow('Error de escritura');
+      expect(prisma.notification.createMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('getContent (HU3/HU4: contenido gateado por inscripción)', () => {

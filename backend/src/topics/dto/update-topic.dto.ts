@@ -12,6 +12,6 @@ export class UpdateTopicDto {
   @IsOptional()
   @IsString()
   @MaxLength(50000)
-  contentText?: string;
+  contentText?: string | null;
 }
 

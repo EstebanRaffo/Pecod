@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 export default function NavBar() {
   const { user, logout } = useAuth();
   if (!user) return null;
 
   return (
-    <nav className="bg-slate-800 text-white px-6 py-3 flex items-center justify-between">
-      <div className="flex gap-4 items-center">
+    <nav className="relative bg-slate-800 text-white px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap gap-4 items-center">
         <span className="font-semibold">PECOD</span>
         {user.role === 'STUDENT' && (
           <>
@@ -23,9 +24,10 @@ export default function NavBar() {
           </>
         )}
       </div>
-      <div className="flex gap-3 items-center text-sm">
-        <span>{user.name}</span>
-        <button onClick={logout} className="underline">
+      <div className="flex gap-3 items-center text-sm min-w-0 max-w-full ml-auto">
+        <span className="break-words min-w-0">{user.name}</span>
+        {user.role === 'STUDENT' && <NotificationBell key={user.id} />}
+        <button onClick={logout} className="underline shrink-0">
           Cerrar sesión
         </button>
       </div>

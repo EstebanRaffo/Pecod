@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { CourseProgress, getCourseProgress, setTopicViewed } from '../api/progress';
 import CourseProgressBar from '../components/CourseProgressBar';
@@ -62,6 +62,7 @@ function ReadingMaterial({ text }: { text: string }) {
 
 export default function CourseLearningPage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +105,13 @@ export default function CourseLearningPage() {
 
     loadCourseContent();
     return () => { active = false; };
-  }, [id]);
+  }, [id, location.key]);
+
+  useEffect(() => {
+    if (course && location.hash) {
+      document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'start' });
+    }
+  }, [course, location.hash]);
 
   async function toggleTopicViewed(topicId: string) {
     if (!course || !progress || savingTopicId) return;

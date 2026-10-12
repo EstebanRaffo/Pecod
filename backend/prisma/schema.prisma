@@ -48,6 +48,7 @@ model User {
   coursesAsProfessor Course[]           @relation("ProfessorCourses")
   enrollments        Enrollment[]
   evaluationAttempts EvaluationAttempt[]
+  notifications      Notification[]
 
   @@index([institutionId])
   @@map("users")
@@ -73,6 +74,7 @@ model Course {
   topics      Topic[]
   enrollments Enrollment[]
   evaluations Evaluation[]
+  notifications Notification[]
 
   @@index([institutionId, isPublished])
   @@index([category])
@@ -94,9 +96,33 @@ model Topic {
   materials    Material[]
   evaluations  Evaluation[]
   progress     TopicProgress[]
+  notifications Notification[]
 
   @@index([courseId])
   @@map("topics")
+}
+
+enum ContentEvent {
+  NEW_CONTENT
+  UPDATED_CONTENT
+}
+
+model Notification {
+  id         String @id @default(uuid())
+  studentId  String
+  student    User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId   String
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  topicId    String?
+  topic      Topic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  courseName String
+  topicTitle String
+  event      ContentEvent
+  createdAt  DateTime @default(now())
+  readAt     DateTime?
+
+  @@index([studentId, createdAt])
+  @@map("notifications")
 }
 
 model Material {

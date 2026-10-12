@@ -104,6 +104,28 @@ Endpoints autenticados (base `/api`):
 
 Para actualizar una base existente, ejecutar `npx prisma migrate deploy` y `npm run prisma:generate` desde `backend`, con el backend detenido para evitar el bloqueo de la DLL de Prisma en Windows.
 
+### Notificaciones de contenido (HU17)
+
+La campana aparece solo en el header del Alumno y se muestra roja mientras haya avisos sin leer. El listado muestra primero los mas recientes, con nombre del curso, tipo de evento, tema y fecha/hora local. Cada aviso permite marcarse como leido y acceder directamente al tema; abrir el listado no marca automaticamente los avisos.
+
+Los avisos se generan para los alumnos inscriptos al crear temas o agregar/modificar texto, videos, grabaciones y materiales adjuntos. La escritura del contenido y sus avisos es transaccional. No se generan por eliminaciones, guardados sin cambios ni modificaciones de datos generales del curso. Una inscripcion posterior no recibe avisos retroactivos. Los avisos conservan los nombres del curso y del tema al momento del evento.
+
+La sesion consulta novedades cada 15 segundos, al recuperar el foco y al abrir el listado. El estado de lectura persiste en la base y es individual por alumno. La API comprueba tanto el destinatario como la inscripcion vigente, sin aceptar un ID de alumno proporcionado por el cliente.
+
+Endpoints autenticados, exclusivos de `STUDENT` (base `/api`):
+- `GET /notifications`: listado propio, ordenado de mas reciente a mas antiguo.
+- `PATCH /notifications/:id/read`: marcar un aviso propio como leido.
+
+Para una base existente, detener el backend y ejecutar desde `backend`:
+
+```bash
+npx prisma migrate deploy
+npm run prisma:generate
+npm run start:dev
+```
+
+Pruebas: `npm test -- --runInBand topics.service.spec notifications.service.spec` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/notifications.cy.ts` desde `frontend`. El spec comprueba recepcion en una sesion abierta, orden, lectura persistente, navegacion al tema, vista movil, exclusiones y aislamiento entre alumnos.
+
 ## Testing
 
 Cada test está comentado con la HU y el criterio de aceptación puntual que verifica — la idea es que la trazabilidad HU → criterio → test sea directa, no que haya que adivinarla.

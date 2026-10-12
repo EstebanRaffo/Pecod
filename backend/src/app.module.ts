@@ -9,6 +9,7 @@ import { TopicsModule } from './topics/topics.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { EvaluationsModule } from './evaluations/evaluations.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UploadsModule } from './uploads/uploads.module';
     UsersModule, // HU9
     CoursesModule, // HU1, HU4, HU5, HU8
     TopicsModule, // HU5, HU6, HU7
+    NotificationsModule,
     EnrollmentsModule, // HU2, HU3
     EvaluationsModule, // HU11, HU12
     UploadsModule, // HU5, HU6, HU7 (URLs prefirmadas S3)

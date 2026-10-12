@@ -6,6 +6,7 @@ type ModelMock = {
   findFirst: jest.Mock;
   findMany: jest.Mock;
   create: jest.Mock;
+  createMany: jest.Mock;
   update: jest.Mock;
   delete: jest.Mock;
   upsert: jest.Mock;
@@ -18,6 +19,7 @@ function createModelMock(): ModelMock {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
+    createMany: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
     upsert: jest.fn(),
@@ -26,19 +28,24 @@ function createModelMock(): ModelMock {
 }
 
 export function createMockPrismaService() {
-  return {
+  const prisma = {
     institution: createModelMock(),
     user: createModelMock(),
     course: createModelMock(),
     topic: createModelMock(),
     material: createModelMock(),
     enrollment: createModelMock(),
+    notification: createModelMock(),
     topicProgress: createModelMock(),
     evaluation: createModelMock(),
     question: createModelMock(),
     questionOption: createModelMock(),
     evaluationAttempt: createModelMock(),
+    $transaction: jest.fn(),
   };
+  prisma.enrollment.findMany.mockResolvedValue([]);
+  prisma.$transaction.mockImplementation((callback) => callback(prisma));
+  return prisma;
 }
 
 export type MockPrismaService = ReturnType<typeof createMockPrismaService>;
