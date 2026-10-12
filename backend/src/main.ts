@@ -22,7 +22,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   // eslint-disable-next-line no-console
   console.log(`PECOD backend corriendo en http://localhost:${port}/api`);
 }

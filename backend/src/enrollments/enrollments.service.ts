@@ -35,24 +35,50 @@ export class EnrollmentsService {
     }
   }
 
-  // HU3: "Mis cursos" - incluye cursos despublicados luego de la inscripción
-  // (se marcan como no disponibles en el frontend según course.isPublished).
+  // HU3 & HU18: "Mis cursos" - incluye cursos despublicados luego de la inscripción
+  // (se marcan como no disponibles en el frontend según course.isPublished)
+  // e identifica los cursos finalizados con certificado disponible (HU18 CA9).
   async myCourses(student: AuthenticatedUser) {
     this.requireStudent(student);
     const enrollments = await this.prisma.enrollment.findMany({
       where: { studentId: student.userId },
       include: {
-        course: { include: { _count: { select: { topics: true } } } },
+        certificate: { select: { id: true, code: true, issuedAt: true } },
+        course: {
+          include: {
+            _count: { select: { topics: true } },
+            evaluations: { select: { id: true } },
+          },
+        },
         topicProgress: { select: { topicId: true } },
       },
       orderBy: { enrolledAt: 'desc' },
     });
-    return enrollments.map(({ topicProgress, course, ...enrollment }) => {
-      const { _count, ...courseData } = course;
+
+    const allEvalIds = enrollments.flatMap((e: any) => e.course?.evaluations?.map((ev: any) => ev.id) ?? []);
+    const passedAttempts = allEvalIds.length > 0
+      ? await this.prisma.evaluationAttempt.findMany({
+          where: { evaluationId: { in: allEvalIds }, studentId: student.userId, passed: true },
+          select: { evaluationId: true },
+        })
+      : [];
+    const passedEvalSet = new Set(passedAttempts.map((a) => a.evaluationId));
+
+    return enrollments.map(({ topicProgress, course, certificate, ...enrollment }: any) => {
+      const { _count, evaluations, ...courseData } = course ?? {};
+      const isIssued = !!certificate;
+      const totalTopics = _count?.topics ?? 0;
+      const allTopicsViewed = totalTopics > 0 && (topicProgress?.length ?? 0) >= totalTopics;
+      const courseEvals = evaluations ?? [];
+      const allEvalsPassed = courseEvals.every((ev: any) => passedEvalSet.has(ev.id));
+      const certificateAvailable = isIssued || (allTopicsViewed && allEvalsPassed);
+
       return {
         ...enrollment,
         course: courseData,
-        progress: this.summarizeProgress(topicProgress, _count.topics),
+        progress: this.summarizeProgress(topicProgress ?? [], totalTopics),
+        certificateAvailable,
+        certificate: certificate ?? null,
       };
     });
   }

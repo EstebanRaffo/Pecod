@@ -49,6 +49,7 @@ model User {
   enrollments        Enrollment[]
   evaluationAttempts EvaluationAttempt[]
   notifications      Notification[]
+  certificates       Certificate[]
 
   @@index([institutionId])
   @@map("users")
@@ -75,6 +76,7 @@ model Course {
   enrollments Enrollment[]
   evaluations Evaluation[]
   notifications Notification[]
+  certificates  Certificate[]
 
   @@index([institutionId, isPublished])
   @@index([category])
@@ -148,6 +150,7 @@ model Enrollment {
   course     Course   @relation(fields: [courseId], references: [id])
   enrolledAt DateTime @default(now())
   topicProgress TopicProgress[]
+  certificate   Certificate?
 
   @@unique([studentId, courseId]) // evita doble inscripción (HU2)
   @@map("enrollments")
@@ -224,4 +227,24 @@ model EvaluationAttempt {
   @@unique([evaluationId, studentId, attemptNumber])
   @@index([evaluationId, studentId])
   @@map("evaluation_attempts")
+}
+
+model Certificate {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  enrollmentId    String   @unique
+  enrollment      Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentName     String
+  courseName      String
+  institutionName String
+  professorName   String
+  issuedAt        DateTime @default(now())
+
+  @@index([studentId])
+  @@index([courseId])
+  @@map("certificates")
 }

@@ -41,6 +41,7 @@ export function createMockPrismaService() {
     question: createModelMock(),
     questionOption: createModelMock(),
     evaluationAttempt: createModelMock(),
+    certificate: createModelMock(),
     $transaction: jest.fn(),
   };
   prisma.enrollment.findMany.mockResolvedValue([]);

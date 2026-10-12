@@ -84,6 +84,55 @@ describe('EnrollmentsService (HU2, HU3)', () => {
     expect(result[0].progress).toEqual({ viewed: 1, total: 3, percentage: 33, viewedTopicIds: ['topic-1'] });
   });
 
+  describe('HU18 CA9: "Mis cursos" identifica cursos finalizados con certificado disponible', () => {
+    it('identifica como disponible cuando ya tiene un certificado emitido', async () => {
+      prisma.enrollment.findMany.mockResolvedValue([
+        {
+          id: 'enr-1',
+          certificate: { id: 'cert-1', code: 'CERT-001', issuedAt: new Date() },
+          course: { id: 'course-1', _count: { topics: 2 }, evaluations: [] },
+          topicProgress: [{ topicId: 'topic-1' }],
+        },
+      ]);
+
+      const result = await service.myCourses(student);
+      expect(result[0].certificateAvailable).toBe(true);
+      expect(result[0].certificate?.code).toBe('CERT-001');
+    });
+
+    it('identifica como disponible cuando cumple 100% de avance y evaluaciones aprobadas', async () => {
+      prisma.enrollment.findMany.mockResolvedValue([
+        {
+          id: 'enr-1',
+          certificate: null,
+          course: { id: 'course-1', _count: { topics: 2 }, evaluations: [{ id: 'eval-1' }] },
+          topicProgress: [{ topicId: 'topic-1' }, { topicId: 'topic-2' }],
+        },
+      ]);
+      prisma.evaluationAttempt.findMany.mockResolvedValue([
+        { evaluationId: 'eval-1' },
+      ]);
+
+      const result = await service.myCourses(student);
+      expect(result[0].certificateAvailable).toBe(true);
+    });
+
+    it('identifica como no disponible si aún faltan temas o evaluaciones', async () => {
+      prisma.enrollment.findMany.mockResolvedValue([
+        {
+          id: 'enr-1',
+          certificate: null,
+          course: { id: 'course-1', _count: { topics: 2 }, evaluations: [{ id: 'eval-1' }] },
+          topicProgress: [{ topicId: 'topic-1' }],
+        },
+      ]);
+      prisma.evaluationAttempt.findMany.mockResolvedValue([]);
+
+      const result = await service.myCourses(student);
+      expect(result[0].certificateAvailable).toBe(false);
+    });
+  });
+
   describe('HU16: progreso individual', () => {
     const enrollment = (total = 3, viewedTopicIds = ['topic-1']) => ({
       id: 'enr-1', course: { _count: { topics: total } },

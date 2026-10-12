@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { CourseProgress, getCourseProgress, setTopicViewed } from '../api/progress';
+import { CertificateStatus, downloadCertificatePdf, getCertificateStatus } from '../api/certificates';
 import CourseProgressBar from '../components/CourseProgressBar';
 
 interface Material {
@@ -68,13 +69,18 @@ export default function CourseLearningPage() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<CourseProgress | null>(null);
   const [savingTopicId, setSavingTopicId] = useState<string | null>(null);
+  const [certificateStatus, setCertificateStatus] = useState<CertificateStatus | null>(null);
+  const [downloadingCert, setDownloadingCert] = useState(false);
+  const [certError, setCertError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     setCourse(null);
     setProgress(null);
     setEvaluations([]);
+    setCertificateStatus(null);
     setError(null);
+    setCertError(null);
 
     async function loadCourseContent() {
       try {
@@ -93,6 +99,11 @@ export default function CourseLearningPage() {
               if (active) setEvaluations(data);
             }).catch((err) => {
               if (active) setError(err.response?.data?.message ?? 'No se pudieron cargar las evaluaciones.');
+            }),
+            getCertificateStatus(courseData.id).then((status) => {
+              if (active) setCertificateStatus(status);
+            }).catch(() => {
+              // Certificate status error can be quiet if progress failed or user cannot access
             }),
           ]);
         }
@@ -118,11 +129,29 @@ export default function CourseLearningPage() {
     setSavingTopicId(topicId);
     setError(null);
     try {
-      setProgress(await setTopicViewed(course.id, topicId, !progress.viewedTopicIds.includes(topicId)));
+      const updated = await setTopicViewed(course.id, topicId, !progress.viewedTopicIds.includes(topicId));
+      setProgress(updated);
+      // Actualizar estado del certificado dinámicamente al cambiar el progreso
+      getCertificateStatus(course.id).then(setCertificateStatus).catch(() => {});
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'No se pudo guardar el avance. Intentá nuevamente.');
     } finally {
       setSavingTopicId(null);
+    }
+  }
+
+  async function handleDownloadCertificate() {
+    if (!course || downloadingCert) return;
+    setDownloadingCert(true);
+    setCertError(null);
+    try {
+      await downloadCertificatePdf(course.id);
+      const updatedStatus = await getCertificateStatus(course.id);
+      setCertificateStatus(updatedStatus);
+    } catch (err: any) {
+      setCertError(err.response?.data?.message ?? 'No se pudo descargar el certificado.');
+    } finally {
+      setDownloadingCert(false);
     }
   }
 
@@ -159,6 +188,53 @@ export default function CourseLearningPage() {
       </header>
 
       {error && <p className="text-sm text-red-700">{error}</p>}
+
+      <section aria-labelledby="certificate-section-heading" className="border rounded-lg p-4 bg-slate-50 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 id="certificate-section-heading" className="text-lg font-semibold text-slate-900">Certificado de finalización</h2>
+            {certificateStatus?.issued && certificateStatus.certificate && (
+              <p className="text-xs text-emerald-700 font-medium">
+                Certificado emitido · Código: <span className="font-mono font-bold">{certificateStatus.certificate.code}</span>
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            data-testid="download-certificate-button"
+            onClick={handleDownloadCertificate}
+            disabled={!certificateStatus?.eligible || downloadingCert}
+            className={`px-4 py-2 rounded font-medium text-sm transition ${
+              certificateStatus?.eligible
+                ? 'bg-slate-900 text-white hover:bg-slate-800'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+            }`}
+          >
+            {downloadingCert ? 'Descargando...' : 'Descargar certificado'}
+          </button>
+        </div>
+
+        {!certificateStatus?.eligible && certificateStatus && (
+          <div data-testid="certificate-pending-reasons" className="text-sm bg-white border border-slate-200 rounded p-3 space-y-1">
+            {certificateStatus.attemptsExhausted ? (
+              <p className="text-red-700 font-medium">
+                Agotaste los intentos de una evaluación sin aprobarla; no podés obtener el certificado.
+              </p>
+            ) : (
+              <>
+                <p className="font-medium text-slate-700">Para descargar el certificado necesitás:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-600 text-xs sm:text-sm">
+                  {certificateStatus.reasons.map((reason, index) => (
+                    <li key={index}>{reason}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
+
+        {certError && <p className="text-sm text-red-600">{certError}</p>}
+      </section>
 
       <section aria-labelledby="syllabus-heading" className="space-y-5">
         <h2 id="syllabus-heading" className="text-xl font-semibold">Temario</h2>

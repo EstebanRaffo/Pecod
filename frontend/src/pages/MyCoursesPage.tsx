@@ -13,6 +13,12 @@ interface EnrollmentItem {
     category: string;
     isPublished: boolean;
   };
+  certificateAvailable?: boolean;
+  certificate?: {
+    id: string;
+    code: string;
+    issuedAt: string;
+  } | null;
 }
 
 export default function MyCoursesPage() {
@@ -44,7 +50,7 @@ export default function MyCoursesPage() {
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-4">Mis cursos</h1>
       <div className="space-y-3">
-        {enrollments.map(({ id, course, progress }) => (
+        {enrollments.map(({ id, course, progress, certificateAvailable }) => (
           <Link
             key={id}
             to={`/mis-cursos/${course.id}`}
@@ -55,12 +61,23 @@ export default function MyCoursesPage() {
                 <span className="text-xs uppercase text-slate-500">{course.category}</span>
                 <h2 className="font-semibold">{course.name}</h2>
               </div>
-              {/* HU3: curso despublicado luego de la inscripción se identifica como no disponible */}
-              {!course.isPublished && (
-                <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">
-                  No disponible
-                </span>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* HU18 CA9: "Mis cursos" identifica los cursos finalizados con certificado disponible */}
+                {certificateAvailable && (
+                  <span
+                    data-testid="certificate-badge"
+                    className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-1 rounded"
+                  >
+                    Finalizado · Certificado disponible
+                  </span>
+                )}
+                {/* HU3: curso despublicado luego de la inscripción se identifica como no disponible */}
+                {!course.isPublished && (
+                  <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">
+                    No disponible
+                  </span>
+                )}
+              </div>
             </div>
             <CourseProgressBar progress={progress} />
           </Link>
