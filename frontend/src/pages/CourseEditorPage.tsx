@@ -69,14 +69,14 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between mb-2">
-      <h2 className="font-semibold text-lg">{title}</h2>
+      <h2 className="font-semibold text-lg text-slate-800 dark:text-slate-100">{title}</h2>
       {!editing && (
         <button
           type="button"
           onClick={onEdit}
           aria-label={`Editar ${title}`}
           title="Editar"
-          className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition"
+          className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 transition"
         >
           <PencilIcon />
         </button>
@@ -195,16 +195,16 @@ export default function CourseEditorPage() {
     loadCourse();
   }
 
-  if (!course) return <p className="p-6">Cargando...</p>;
+  if (!course) return <p className="p-6 text-slate-700 dark:text-slate-300">Cargando...</p>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-8">
+    <div className="max-w-3xl mx-auto p-6 space-y-8 bg-slate-50 dark:bg-slate-900 min-h-screen">
 
       {/* ── Encabezado + publicación ─────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase text-slate-400 tracking-wide mb-0.5">Detalle del curso</p>
-          <h1 className="text-2xl font-bold text-slate-900">{course.name}</h1>
+          <p className="text-xs uppercase text-slate-400 dark:text-slate-500 tracking-wide mb-0.5">Detalle del curso</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{course.name}</h1>
         </div>
         {course.isPublished ? (
           <button
@@ -224,7 +224,7 @@ export default function CourseEditorPage() {
       </div>
 
       {/* ── Nombre ──────────────────────────────────────────────────────── */}
-      <section className="border rounded-lg p-4">
+      <section className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
         <SectionHeader
           title="Nombre"
           onEdit={() => { setDraftName(course.name); setEditingName(true); }}
@@ -237,26 +237,26 @@ export default function CourseEditorPage() {
               value={draftName}
               onChange={(e) => setDraftName(e.target.value)}
               required
-              className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm"
+              className="flex-1 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm"
             />
-            <button type="submit" className="bg-slate-800 text-white px-3 py-2 rounded text-sm">
+            <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-600">
               Guardar
             </button>
             <button
               type="button"
               onClick={() => setEditingName(false)}
-              className="border px-3 py-2 rounded text-sm"
+              className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
             >
               Cancelar
             </button>
           </form>
         ) : (
-          <p className="text-slate-800">{course.name}</p>
+          <p className="text-slate-800 dark:text-slate-200">{course.name}</p>
         )}
       </section>
 
       {/* ── Descripción ─────────────────────────────────────────────────── */}
-      <section className="border rounded-lg p-4">
+      <section className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
         <SectionHeader
           title="Descripción"
           onEdit={() => { setDraftDescription(course.description); setEditingDescription(true); }}
@@ -270,28 +270,28 @@ export default function CourseEditorPage() {
               value={draftDescription}
               onChange={(e) => setDraftDescription(e.target.value)}
               required
-              className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+              className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm"
             />
             <div className="flex gap-2">
-              <button type="submit" className="bg-slate-800 text-white px-3 py-2 rounded text-sm">
+              <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-600">
                 Guardar
               </button>
               <button
                 type="button"
                 onClick={() => setEditingDescription(false)}
-                className="border px-3 py-2 rounded text-sm"
+                className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 Cancelar
               </button>
             </div>
           </form>
         ) : (
-          <p className="text-slate-700 whitespace-pre-wrap">{course.description}</p>
+          <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{course.description}</p>
         )}
       </section>
 
       {/* ── Área ────────────────────────────────────────────────────────── */}
-      <section className="border rounded-lg p-4">
+      <section className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
         <SectionHeader
           title="Área"
           onEdit={() => { setDraftCategory(course.category); setEditingCategory(true); }}
@@ -304,26 +304,26 @@ export default function CourseEditorPage() {
               value={draftCategory}
               onChange={(e) => setDraftCategory(e.target.value)}
               required
-              className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm"
+              className="flex-1 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm"
             />
-            <button type="submit" className="bg-slate-800 text-white px-3 py-2 rounded text-sm">
+            <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-600">
               Guardar
             </button>
             <button
               type="button"
               onClick={() => setEditingCategory(false)}
-              className="border px-3 py-2 rounded text-sm"
+              className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
             >
               Cancelar
             </button>
           </form>
         ) : (
-          <p className="text-slate-800">{course.category}</p>
+          <p className="text-slate-800 dark:text-slate-200">{course.category}</p>
         )}
       </section>
 
       {/* ── Tecnología ──────────────────────────────────────────────────── */}
-      <section className="border rounded-lg p-4">
+      <section className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
         <SectionHeader
           title="Tecnología"
           onEdit={() => { setDraftTechnology(course.technology ?? ''); setEditingTechnology(true); }}
@@ -336,26 +336,26 @@ export default function CourseEditorPage() {
               value={draftTechnology}
               onChange={(e) => setDraftTechnology(e.target.value)}
               placeholder="Ej: React, Node.js"
-              className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm"
+              className="flex-1 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm"
             />
-            <button type="submit" className="bg-slate-800 text-white px-3 py-2 rounded text-sm">
+            <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-600">
               Guardar
             </button>
             <button
               type="button"
               onClick={() => setEditingTechnology(false)}
-              className="border px-3 py-2 rounded text-sm"
+              className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
             >
               Cancelar
             </button>
           </form>
         ) : (
-          <p className="text-slate-800">{course.technology ?? <span className="text-slate-400 italic">Sin especificar</span>}</p>
+          <p className="text-slate-800 dark:text-slate-200">{course.technology ?? <span className="text-slate-400 dark:text-slate-500 italic">Sin especificar</span>}</p>
         )}
       </section>
 
       {/* ── Requerimientos académicos ──────────────────────────────────── */}
-      <section className="border rounded-lg p-4">
+      <section className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
         <SectionHeader
           title="Requerimientos Académicos"
           onEdit={() => { setDraftAcademicRequirements(course.academicRequirements ?? ''); setEditingAcademicRequirements(true); }}
@@ -368,28 +368,28 @@ export default function CourseEditorPage() {
               rows={3}
               value={draftAcademicRequirements}
               onChange={(e) => setDraftAcademicRequirements(e.target.value)}
-              className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+              className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm"
             />
             <div className="flex gap-2">
-              <button type="submit" className="bg-slate-800 text-white px-3 py-2 rounded text-sm">
+              <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-600">
                 Guardar
               </button>
               <button
                 type="button"
                 onClick={() => setEditingAcademicRequirements(false)}
-                className="border px-3 py-2 rounded text-sm"
+                className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 Cancelar
               </button>
             </div>
           </form>
         ) : (
-          <p className="text-slate-800 whitespace-pre-wrap">{course.academicRequirements ?? <span className="text-slate-400 italic">Sin especificar</span>}</p>
+          <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{course.academicRequirements ?? <span className="text-slate-400 dark:text-slate-500 italic">Sin especificar</span>}</p>
         )}
       </section>
 
       {/* ── Aptitudes adquiridas ───────────────────────────────────────── */}
-      <section className="border rounded-lg p-4">
+      <section className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
         <SectionHeader
           title="Aptitudes Adquiridas al finalizar el curso"
           onEdit={() => { setDraftSkills(course.skills ?? ''); setEditingSkills(true); }}
@@ -402,28 +402,28 @@ export default function CourseEditorPage() {
               rows={3}
               value={draftSkills}
               onChange={(e) => setDraftSkills(e.target.value)}
-              className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+              className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm"
             />
             <div className="flex gap-2">
-              <button type="submit" className="bg-slate-800 text-white px-3 py-2 rounded text-sm">
+              <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-600">
                 Guardar
               </button>
               <button
                 type="button"
                 onClick={() => setEditingSkills(false)}
-                className="border px-3 py-2 rounded text-sm"
+                className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 Cancelar
               </button>
             </div>
           </form>
         ) : (
-          <p className="text-slate-800 whitespace-pre-wrap">{course.skills ?? <span className="text-slate-400 italic">Sin especificar</span>}</p>
+          <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{course.skills ?? <span className="text-slate-400 dark:text-slate-500 italic">Sin especificar</span>}</p>
         )}
       </section>
 
       {/* ── Temario ─────────────────────────────────────────────────────── */}
-      <section className="border rounded-lg p-4">
+      <section className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
         <SectionHeader
           title="Temario"
           onEdit={() => setEditingTopics(true)}
@@ -432,9 +432,9 @@ export default function CourseEditorPage() {
 
         <ul className="mb-4 space-y-3">
           {course.topics.map((topic) => (
-            <li key={topic.id} className="border rounded px-3 py-2">
+            <li key={topic.id} className="border border-slate-200 dark:border-slate-700 rounded px-3 py-2 bg-slate-50 dark:bg-slate-700">
               <div className="flex items-center justify-between">
-                <span className="text-sm">
+                <span className="text-sm text-slate-800 dark:text-slate-200">
                   {topic.order}. {topic.title}
                 </span>
               </div>
@@ -449,7 +449,7 @@ export default function CourseEditorPage() {
             </li>
           ))}
           {course.topics.length === 0 && (
-            <p className="text-sm text-slate-400 italic">No hay temas cargados aún.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 italic">No hay temas cargados aún.</p>
           )}
         </ul>
 
@@ -461,15 +461,15 @@ export default function CourseEditorPage() {
               value={newTopicTitle}
               onChange={(e) => setNewTopicTitle(e.target.value)}
               required
-              className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm"
+              className="flex-1 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm"
             />
-            <button type="submit" className="bg-slate-800 text-white px-3 py-2 rounded text-sm">
+            <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-600">
               Agregar
             </button>
             <button
               type="button"
               onClick={() => { setEditingTopics(false); setNewTopicTitle(''); }}
-              className="border px-3 py-2 rounded text-sm"
+              className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
             >
               Cancelar
             </button>
@@ -478,7 +478,7 @@ export default function CourseEditorPage() {
       </section>
 
       {/* ── Evaluaciones ────────────────────────────────────────────────── */}
-      <section className="border rounded-lg p-4">
+      <section className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
         <SectionHeader
           title="Evaluaciones"
           onEdit={() => setEditingEvaluations(true)}
@@ -487,16 +487,16 @@ export default function CourseEditorPage() {
 
         <ul className="mb-3 space-y-1">
           {evaluations.map((ev) => (
-            <li key={ev.id} className="border rounded px-3 py-2 text-sm">
+            <li key={ev.id} className="border border-slate-200 dark:border-slate-700 rounded px-3 py-2 text-sm bg-slate-50 dark:bg-slate-700">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 break-words">
-                  <span className="font-medium">{ev.title}</span>
-                  <span className="text-slate-500 ml-2">— mínimo para aprobar: {ev.minScore}</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">{ev.title}</span>
+                  <span className="text-slate-500 dark:text-slate-400 ml-2">— mínimo para aprobar: {ev.minScore}</span>
                 </div>
                 <button type="button" title="Ver evaluación" aria-label={`Ver ${ev.title}`}
                   aria-expanded={expandedEvaluationId === ev.id} aria-controls={`evaluation-${ev.id}`}
                   onClick={() => setExpandedEvaluationId(expandedEvaluationId === ev.id ? null : ev.id)}
-                  className="shrink-0 p-1.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800">
+                  className="shrink-0 p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-800 dark:hover:text-slate-200">
                   <Eye className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
@@ -508,7 +508,7 @@ export default function CourseEditorPage() {
             </li>
           ))}
           {evaluations.length === 0 && (
-            <p className="text-sm text-slate-400 italic">No hay evaluaciones creadas aún.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 italic">No hay evaluaciones creadas aún.</p>
           )}
         </ul>
 

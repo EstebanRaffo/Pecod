@@ -32,11 +32,11 @@ export default function AdminInstitutionsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Instituciones</h1>
+    <div className="max-w-3xl mx-auto p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+      <h1 className="text-2xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Instituciones</h1>
 
-      <form onSubmit={handleCreate} className="border rounded-lg p-4 mb-6 space-y-3">
-        <h2 className="font-semibold">Nueva institución</h2>
+      <form onSubmit={handleCreate} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6 space-y-3 bg-white dark:bg-slate-800">
+        <h2 className="font-semibold text-slate-800 dark:text-slate-100">Nueva institución</h2>
         {(['name', 'domain', 'address', 'phone', 'contactEmail'] as const).map((field) => (
           <input
             key={field}
@@ -48,20 +48,20 @@ export default function AdminInstitutionsPage() {
             value={form[field]}
             onChange={(e) => setForm({ ...form, [field]: e.target.value })}
             required
-            className="w-full border border-slate-300 rounded px-3 py-2"
+            className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
           />
         ))}
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" className="bg-slate-800 text-white px-4 py-2 rounded">
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-700 dark:hover:bg-slate-600">
           Crear institución
         </button>
       </form>
 
       <div className="space-y-2">
         {institutions.map((inst) => (
-          <div key={inst.id} className="border rounded-lg p-4">
-            <h3 className="font-semibold">{inst.name}</h3>
-            <p className="text-sm text-slate-500">{inst.domain}</p>
+          <div key={inst.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100">{inst.name}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{inst.domain}</p>
           </div>
         ))}
       </div>

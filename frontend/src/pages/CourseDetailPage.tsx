@@ -49,42 +49,42 @@ export default function CourseDetailPage() {
     }
   }
 
-  if (!course) return <p className="p-6">Cargando...</p>;
+  if (!course) return <p className="p-6 text-slate-700 dark:text-slate-300">Cargando...</p>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <div className="flex flex-wrap items-center gap-x-2 text-xs uppercase text-slate-500 mb-1">
+    <div className="max-w-3xl mx-auto p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+      <div className="flex flex-wrap items-center gap-x-2 text-xs uppercase text-slate-500 dark:text-slate-400 mb-1">
         <span>{course.category}</span>
         {course.technology && <><span>·</span><span>{course.technology}</span></>}
       </div>
-      <h1 className="text-3xl font-semibold mb-2">{course.name}</h1>
-      <p className="text-slate-700 mb-4">{course.description}</p>
+      <h1 className="text-3xl font-semibold mb-2 text-slate-800 dark:text-slate-100">{course.name}</h1>
+      <p className="text-slate-700 dark:text-slate-300 mb-4">{course.description}</p>
 
       {course.academicRequirements && (
-        <p className="mb-2 whitespace-pre-wrap">
+        <p className="mb-2 whitespace-pre-wrap text-slate-700 dark:text-slate-300">
           <strong>Requerimientos Académicos:</strong> {course.academicRequirements}
         </p>
       )}
       {course.skills && (
-        <p className="mb-4 whitespace-pre-wrap">
+        <p className="mb-4 whitespace-pre-wrap text-slate-700 dark:text-slate-300">
           <strong>Aptitudes adquiridas al finalizar el curso:</strong> {course.skills}
         </p>
       )}
 
-      <h2 className="font-semibold text-lg mb-2">Temario</h2>
-      <ul className="list-disc list-inside mb-6 text-slate-700">
+      <h2 className="font-semibold text-lg mb-2 text-slate-800 dark:text-slate-100">Temario</h2>
+      <ul className="list-disc list-inside mb-6 text-slate-700 dark:text-slate-300">
         {course.topics.map((topic) => (
           <li key={topic.id}>{topic.title}</li>
         ))}
       </ul>
 
-      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>}
 
       {user?.role === 'STUDENT' &&
         (course.isEnrolled ? (
           <button
             onClick={() => navigate(`/mis-cursos/${course.id}`)}
-            className="bg-slate-800 text-white px-4 py-2 rounded"
+            className="bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-700 dark:hover:bg-slate-600"
           >
             Ir al contenido
           </button>
@@ -92,7 +92,7 @@ export default function CourseDetailPage() {
           <button
             onClick={handleEnroll}
             disabled={enrolling}
-            className="bg-slate-800 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50"
           >
             {enrolling ? 'Inscribiendo...' : 'Inscribirme'}
           </button>

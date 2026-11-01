@@ -32,14 +32,14 @@ function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6 space-y-4">
-        <h3 className="text-base font-semibold text-slate-800">{title}</h3>
-        <p className="text-sm text-slate-600">{message}</p>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg dark:shadow-xl dark:shadow-slate-900/50 w-full max-w-sm mx-4 p-6 space-y-4">
+        <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400">{message}</p>
         <div className="flex justify-end gap-3 pt-2">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm rounded border border-slate-300 text-slate-700 hover:bg-slate-50"
+            className="px-4 py-2 text-sm rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
           >
             Cancelar
           </button>
@@ -114,7 +114,7 @@ function ReadingMaterialDisplay({ text }: { text: string }) {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-600 underline break-all"
+        className="text-blue-600 dark:text-blue-400 underline break-all"
       >
         {url}
       </a>,
@@ -361,7 +361,7 @@ export default function TopicMediaUploader({
       {/* ── Botones de acción ─────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
         {/* HU5 */}
-        <label className="cursor-pointer text-slate-700 underline">
+        <label className="cursor-pointer text-slate-700 dark:text-slate-300 underline">
           {videoUrl ? 'Reemplazar video (archivo)' : 'Subir video (archivo)'}
           <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={handleFileSelected} hidden />
         </label>
@@ -369,21 +369,21 @@ export default function TopicMediaUploader({
         {/* HU6 */}
         {isRecording ? (
           <>
-            <button onClick={handleStopRecording} className="text-red-600 underline">
+            <button onClick={handleStopRecording} className="text-red-600 dark:text-red-400 underline">
               Finalizar grabación
             </button>
-            <button onClick={cancel} className="text-slate-500 underline">
+            <button onClick={cancel} className="text-slate-500 dark:text-slate-400 underline">
               Cancelar
             </button>
           </>
         ) : (
-          <button onClick={start} className="text-slate-700 underline">
+          <button onClick={start} className="text-slate-700 dark:text-slate-300 underline">
             {screenRecordingUrl ? 'Volver a grabar pantalla' : 'Grabar pantalla'}
           </button>
         )}
 
         {/* HU7 */}
-        <label className="cursor-pointer text-slate-700 underline">
+        <label className="cursor-pointer text-slate-700 dark:text-slate-300 underline">
           Agregar material
           <input type="file" accept=".pdf,.xlsx,.xls,.docx,.doc,.txt" onChange={handleMaterialSelected} hidden />
         </label>
@@ -396,7 +396,7 @@ export default function TopicMediaUploader({
             setReadingError(null);
             setReadingOpen(true);
           }}
-          className="text-slate-700 underline"
+          className="text-slate-700 dark:text-slate-300 underline"
         >
           Material de Lectura
         </button>
@@ -404,14 +404,14 @@ export default function TopicMediaUploader({
 
       {/* ── Editor de Material de Lectura ────────────────────────────────── */}
       {readingOpen && (
-        <div className="mt-2 border rounded p-3 space-y-2">
+        <div className="mt-2 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-2 bg-white dark:bg-slate-700">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-300">Material de Lectura</p>
             <button
               type="button"
               onClick={() => setReadingExpanded((expanded) => !expanded)}
               aria-expanded={readingExpanded}
-              className="text-xs text-slate-500 underline"
+              className="text-xs text-slate-500 dark:text-slate-400 underline"
             >
               {readingExpanded ? 'Contraer' : 'Expandir'}
             </button>
@@ -422,14 +422,14 @@ export default function TopicMediaUploader({
             value={draftReading}
             onChange={(e) => setDraftReading(e.target.value)}
             placeholder="Escribí el texto del material de lectura. Podés pegar links externos (ej: https://docs.example.com)."
-            className="w-full border border-slate-300 rounded px-3 py-2 text-sm resize-y"
+            className="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm resize-y"
           />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handleSaveReading}
               disabled={savingReading}
-              className="bg-slate-800 text-white px-3 py-2 rounded text-sm disabled:opacity-50"
+              className="bg-slate-800 dark:bg-slate-600 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-500 disabled:opacity-50"
             >
               {savingReading ? 'Guardando...' : 'Guardar'}
             </button>
@@ -437,42 +437,42 @@ export default function TopicMediaUploader({
               type="button"
               onClick={handleCancelReading}
               disabled={savingReading}
-              className="border border-slate-300 px-3 py-2 rounded text-sm disabled:opacity-50"
+              className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
             >
               Cancelar
             </button>
           </div>
           {readingError && (
-            <p className="text-red-600 text-xs">{readingError}</p>
+            <p className="text-red-600 dark:text-red-400 text-xs">{readingError}</p>
           )}
         </div>
       )}
 
       {/* ── Visualización del Material de Lectura guardado ───────────────── */}
       {!readingOpen && contentText && (
-        <div className="mt-2 border rounded p-3 space-y-1">
+        <div className="mt-2 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-1 bg-white dark:bg-slate-700">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-slate-600">Material de Lectura</p>
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-300">Material de Lectura</p>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setReadingPreviewExpanded((expanded) => !expanded)}
                 aria-expanded={readingPreviewExpanded}
-                className="text-xs text-slate-500 underline"
+                className="text-xs text-slate-500 dark:text-slate-400 underline"
               >
                 {readingPreviewExpanded ? 'Contraer' : 'Expandir'}
               </button>
               <button
                 type="button"
                 onClick={() => { setDraftReading(contentText ?? ''); setReadingError(null); setReadingOpen(true); }}
-                className="text-xs text-slate-500 underline"
+                className="text-xs text-slate-500 dark:text-slate-400 underline"
               >
                 Editar
               </button>
             </div>
           </div>
           <div
-            className="text-sm text-slate-700 whitespace-pre-wrap break-words overflow-hidden"
+            className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words overflow-hidden"
             style={readingPreviewExpanded ? undefined : { maxHeight: '6rem' }}
           >
             <ReadingMaterialDisplay text={contentText} />
@@ -482,8 +482,8 @@ export default function TopicMediaUploader({
 
       {/* ── Vista previa: video subido (HU5) ─────────────────────────────── */}
       {videoUrl && (
-        <div className="border rounded p-2 space-y-1">
-          <p className="text-xs text-slate-500">Vista previa — video subido</p>
+        <div className="border border-slate-200 dark:border-slate-700 rounded p-2 space-y-1 bg-white dark:bg-slate-700">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Vista previa — video subido</p>
           <video
             src={videoUrl}
             controls
@@ -493,7 +493,7 @@ export default function TopicMediaUploader({
           <button
             type="button"
             onClick={handleDeleteVideo}
-            className="flex items-center gap-1 text-xs text-red-600 underline"
+            className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 underline"
           >
             <TrashIcon /> Eliminar video
           </button>
@@ -502,8 +502,8 @@ export default function TopicMediaUploader({
 
       {/* ── Vista previa: grabación de pantalla (HU6) ────────────────────── */}
       {screenRecordingUrl && (
-        <div className="border rounded p-2 space-y-1">
-          <p className="text-xs text-slate-500">Vista previa — grabación de pantalla</p>
+        <div className="border border-slate-200 dark:border-slate-700 rounded p-2 space-y-1 bg-white dark:bg-slate-700">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Vista previa — grabación de pantalla</p>
           <video
             src={screenRecordingUrl}
             controls
@@ -513,7 +513,7 @@ export default function TopicMediaUploader({
           <button
             type="button"
             onClick={handleDeleteScreenRecording}
-            className="flex items-center gap-1 text-xs text-red-600 underline"
+            className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 underline"
           >
             <TrashIcon /> Eliminar video grabado
           </button>
@@ -522,22 +522,22 @@ export default function TopicMediaUploader({
 
       {/* ── Vista previa: materiales adjuntos (HU7) ──────────────────────── */}
       {materials.length > 0 && (
-        <div className="border rounded p-2 space-y-1">
-          <p className="text-xs text-slate-500">Material adjunto</p>
+        <div className="border border-slate-200 dark:border-slate-700 rounded p-2 space-y-1 bg-white dark:bg-slate-700">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Material adjunto</p>
           {materials.map((m) => (
             <div key={m.id} className="flex items-center justify-between">
               <a
                 href={m.fileUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-slate-700 underline truncate max-w-[70%]"
+                className="text-xs text-slate-700 dark:text-slate-300 underline truncate max-w-[70%]"
               >
                 {m.fileName}
               </a>
               <button
                 type="button"
                 onClick={() => handleDeleteMaterial(m.id)}
-                className="flex items-center gap-1 text-xs text-red-600 underline ml-2 shrink-0"
+                className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 underline ml-2 shrink-0"
               >
                 <TrashIcon /> Eliminar archivo
               </button>
@@ -546,8 +546,8 @@ export default function TopicMediaUploader({
         </div>
       )}
 
-      {status && <p className="text-slate-500">{status}</p>}
-      {(error || recordError) && <p className="text-red-600">{error ?? recordError}</p>}
+      {status && <p className="text-slate-500 dark:text-slate-400">{status}</p>}
+      {(error || recordError) && <p className="text-red-600 dark:text-red-400">{error ?? recordError}</p>}
     </div>
   );
 }

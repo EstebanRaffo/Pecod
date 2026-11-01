@@ -56,22 +56,22 @@ export default function EvaluationPage() {
     }
   }
 
-  if (error && !evaluation) return <p className="p-6 text-red-600">{error}</p>;
-  if (!evaluation) return <p className="p-6">Cargando...</p>;
+  if (error && !evaluation) return <p className="p-6 text-red-600 dark:text-red-400">{error}</p>;
+  if (!evaluation) return <p className="p-6 text-slate-700 dark:text-slate-300">Cargando...</p>;
 
   if (result) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <h1 className="text-2xl font-semibold mb-2">Resultado</h1>
-        <p className="text-lg mb-4">
+      <div className="max-w-2xl mx-auto p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+        <h1 className="text-2xl font-semibold mb-2 text-slate-800 dark:text-slate-100">Resultado</h1>
+        <p className="text-lg mb-4 text-slate-700 dark:text-slate-300">
           Puntaje: <strong>{result.score}</strong> (mínimo para aprobar: {evaluation.minScore}) —{' '}
-          <span className={result.passed ? 'text-green-700' : 'text-red-700'}>
+          <span className={result.passed ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
             {result.passed ? 'Aprobado' : 'Desaprobado'}
           </span>
         </p>
         <ul className="space-y-1">
           {result.feedback.map((f, i) => (
-            <li key={f.questionId} className={f.correct ? 'text-green-700' : 'text-red-700'}>
+            <li key={f.questionId} className={f.correct ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
               Pregunta {i + 1}: {f.correct ? 'Correcta' : 'Incorrecta'}
             </li>
           ))}
@@ -81,19 +81,19 @@ export default function EvaluationPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-1">{evaluation.title}</h1>
-      <p className="text-sm text-slate-500 mb-6">
+    <div className="max-w-2xl mx-auto p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+      <h1 className="text-2xl font-semibold mb-1 text-slate-800 dark:text-slate-100">{evaluation.title}</h1>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
         Intento {evaluation.attemptsUsed + 1} de {evaluation.maxAttempts}
       </p>
 
       {evaluation.questions.map((q, i) => (
-        <div key={q.id} className="mb-4 border rounded-lg p-4">
-          <p className="font-medium mb-2">
+        <div key={q.id} className="mb-4 border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
+          <p className="font-medium mb-2 text-slate-800 dark:text-slate-200">
             {i + 1}. {q.text}
           </p>
           {q.options.map((opt) => (
-            <label key={opt.id} className="flex items-center gap-2 mb-1">
+            <label key={opt.id} className="flex items-center gap-2 mb-1 text-slate-700 dark:text-slate-300">
               <input
                 type="radio"
                 name={q.id}
@@ -107,12 +107,12 @@ export default function EvaluationPage() {
         </div>
       ))}
 
-      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>}
 
       <button
         onClick={handleSubmit}
         disabled={Object.keys(answers).length !== evaluation.questions.length}
-        className="bg-slate-800 text-white px-4 py-2 rounded disabled:opacity-50"
+        className="bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50"
       >
         Enviar evaluación
       </button>

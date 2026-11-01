@@ -63,16 +63,16 @@ export default function EvaluationEditor({ evaluationId }: { evaluationId: strin
             disabled={saving}
             required
             rows={2}
-            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+            className="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm"
           />
           <div className="flex flex-wrap gap-2">
             <button type="submit" disabled={saving || !editing.text.trim()}
-              className="bg-slate-800 text-white px-3 py-2 rounded text-sm disabled:opacity-50">
+              className="bg-slate-800 dark:bg-slate-700 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50">
               {saving ? 'Guardando...' : 'Guardar'}
             </button>
             <button type="button" disabled={saving}
               onClick={() => { setEditing(null); setError(null); }}
-              className="border px-3 py-2 rounded text-sm disabled:opacity-50">
+              className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50">
               Cancelar
             </button>
           </div>
@@ -81,11 +81,11 @@ export default function EvaluationEditor({ evaluationId }: { evaluationId: strin
     }
     return (
       <div className="flex items-start justify-between gap-2 min-w-0">
-        <p className="whitespace-pre-wrap break-words min-w-0">{text}</p>
+        <p className="whitespace-pre-wrap break-words min-w-0 text-slate-700 dark:text-slate-300">{text}</p>
         <button type="button" title={`Editar ${label.toLowerCase()}`}
           aria-label={`Editar ${label.toLowerCase()}`} disabled={!!editing}
           onClick={() => { setEditing({ id, kind, text, label }); setError(null); }}
-          className="shrink-0 p-1.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50">
+          className="shrink-0 p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-200 disabled:opacity-50">
           <Pencil className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
@@ -93,19 +93,19 @@ export default function EvaluationEditor({ evaluationId }: { evaluationId: strin
   }
 
   return (
-    <div className="mt-3 border-t pt-3" aria-label="Detalle de evaluación">
-      {error && <p role="alert" className="text-sm text-red-600 mb-2">{error}</p>}
-      {!detail && !error && <p role="status" className="text-slate-500">Cargando evaluación...</p>}
+    <div className="mt-3 border-t border-slate-200 dark:border-slate-700 pt-3" aria-label="Detalle de evaluación">
+      {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400 mb-2">{error}</p>}
+      {!detail && !error && <p role="status" className="text-slate-500 dark:text-slate-400">Cargando evaluación...</p>}
       {detail && <ol className="space-y-4">
         {detail.questions.map((question, index) => (
           <li key={question.id} className="min-w-0">
-            <h3 className="font-semibold mb-1">Pregunta {index + 1}</h3>
+            <h3 className="font-semibold mb-1 text-slate-800 dark:text-slate-100">Pregunta {index + 1}</h3>
             {field(question.id, 'questions', question.text, `Pregunta ${index + 1}`)}
-            <ul className="mt-2 pl-3 border-l space-y-2">
+            <ul className="mt-2 pl-3 border-l border-slate-200 dark:border-slate-700 space-y-2">
               {question.options.map((option, optionIndex) => (
                 <li key={option.id} className="min-w-0">
-                  <p className="text-xs text-slate-500 mb-1">
-                    Respuesta {optionIndex + 1}{option.isCorrect && <span className="text-green-700 ml-2">Correcta</span>}
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                    Respuesta {optionIndex + 1}{option.isCorrect && <span className="text-green-700 dark:text-green-400 ml-2">Correcta</span>}
                   </p>
                   {field(option.id, 'options', option.text, `Respuesta ${optionIndex + 1} de pregunta ${index + 1}`)}
                 </li>

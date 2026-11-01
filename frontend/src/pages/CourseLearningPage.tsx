@@ -49,7 +49,7 @@ function ReadingMaterial({ text }: { text: string }) {
     const rawUrl = match[0];
     const url = rawUrl.replace(/[.,;:!?)]+$/, '');
     parts.push(
-      <a key={match.index} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline break-all">
+      <a key={match.index} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-700 dark:text-blue-400 underline break-all">
         {url}
       </a>,
     );
@@ -155,14 +155,14 @@ export default function CourseLearningPage() {
     }
   }
 
-  if (error && !course) return <p className="p-6 text-red-600">{error}</p>;
-  if (!course) return <p className="p-6">Cargando curso...</p>;
+  if (error && !course) return <p className="p-6 text-red-600 dark:text-red-400">{error}</p>;
+  if (!course) return <p className="p-6 text-slate-700 dark:text-slate-300">Cargando curso...</p>;
 
   if (!course.isEnrolled) {
     return (
-      <div className="max-w-3xl mx-auto p-6 space-y-3">
-        <p className="text-slate-700">Necesitás estar inscripto para acceder al contenido.</p>
-        <Link to={`/cursos/${course.id}`} className="text-slate-800 underline">
+      <div className="max-w-3xl mx-auto p-6 space-y-3 bg-slate-50 dark:bg-slate-900 min-h-screen">
+        <p className="text-slate-700 dark:text-slate-300">Necesitás estar inscripto para acceder al contenido.</p>
+        <Link to={`/cursos/${course.id}`} className="text-slate-800 dark:text-slate-200 underline">
           Volver al curso
         </Link>
       </div>
@@ -172,29 +172,29 @@ export default function CourseLearningPage() {
   const closingEvaluations = evaluations.filter((evaluation) => !evaluation.topicId);
 
   return (
-    <main className="max-w-4xl mx-auto p-6 space-y-6">
+    <main className="max-w-4xl mx-auto p-6 space-y-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
       <header className="space-y-2">
-        <Link to={`/cursos/${course.id}`} className="text-sm text-slate-600 underline">
+        <Link to={`/cursos/${course.id}`} className="text-sm text-slate-600 dark:text-slate-400 underline">
           Volver al detalle del curso
         </Link>
-        <div className="flex flex-wrap items-center gap-x-2 text-xs uppercase text-slate-500">
+        <div className="flex flex-wrap items-center gap-x-2 text-xs uppercase text-slate-500 dark:text-slate-400">
           <span>{course.category}</span>
           {course.technology && <><span>·</span><span>{course.technology}</span></>}
         </div>
-        <h1 className="text-2xl font-bold text-slate-900">{course.name}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{course.name}</h1>
         {progress ? <CourseProgressBar progress={progress} /> : (
-          <p className="text-sm text-slate-500">{error ? 'Avance no disponible.' : 'Cargando avance...'}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{error ? 'Avance no disponible.' : 'Cargando avance...'}</p>
         )}
       </header>
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
 
-      <section aria-labelledby="certificate-section-heading" className="border rounded-lg p-4 bg-slate-50 space-y-3">
+      <section aria-labelledby="certificate-section-heading" className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 id="certificate-section-heading" className="text-lg font-semibold text-slate-900">Certificado de finalización</h2>
+            <h2 id="certificate-section-heading" className="text-lg font-semibold text-slate-900 dark:text-slate-100">Certificado de finalización</h2>
             {certificateStatus?.issued && certificateStatus.certificate && (
-              <p className="text-xs text-emerald-700 font-medium">
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
                 Certificado emitido · Código: <span className="font-mono font-bold">{certificateStatus.certificate.code}</span>
               </p>
             )}

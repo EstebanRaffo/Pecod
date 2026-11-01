@@ -96,21 +96,21 @@ export default function EvaluationCreator({ courseId, topics, onCreated }: Props
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="text-slate-700 underline text-sm">
+      <button onClick={() => setOpen(true)} className="text-slate-700 dark:text-slate-300 underline text-sm">
         + Crear evaluación
       </button>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border rounded-lg p-4 mt-3 space-y-4 text-sm">
+    <form onSubmit={handleSubmit} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 mt-3 space-y-4 text-sm bg-white dark:bg-slate-800">
       <div className="flex gap-2">
         <input
           placeholder="Título de la evaluación"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="flex-1 border border-slate-300 rounded px-3 py-2"
+          className="flex-1 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
         />
         <input
           type="number"
@@ -118,7 +118,7 @@ export default function EvaluationCreator({ courseId, topics, onCreated }: Props
           max={100}
           value={minScore}
           onChange={(e) => setMinScore(Number(e.target.value))}
-          className="w-32 border border-slate-300 rounded px-3 py-2"
+          className="w-32 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
           title="Puntaje mínimo de aprobación"
         />
       </div>
@@ -126,7 +126,7 @@ export default function EvaluationCreator({ courseId, topics, onCreated }: Props
       <select
         value={topicId}
         onChange={(e) => setTopicId(e.target.value)}
-        className="w-full border border-slate-300 rounded px-3 py-2"
+        className="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded px-3 py-2"
       >
         <option value="">Evaluación de cierre del curso</option>
         {topics.map((topic) => (
@@ -137,17 +137,17 @@ export default function EvaluationCreator({ courseId, topics, onCreated }: Props
       </select>
 
       {questions.map((q, qIndex) => (
-        <div key={qIndex} className="border rounded p-3 space-y-2">
+        <div key={qIndex} className="border border-slate-200 dark:border-slate-700 rounded p-3 space-y-2 bg-slate-50 dark:bg-slate-700">
           <div className="flex gap-2">
             <input
               placeholder={`Pregunta ${qIndex + 1}`}
               value={q.text}
               onChange={(e) => updateQuestionText(qIndex, e.target.value)}
               required
-              className="flex-1 border border-slate-300 rounded px-3 py-2"
+              className="flex-1 border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
             />
             {questions.length > 1 && (
-              <button type="button" onClick={() => removeQuestion(qIndex)} className="text-red-600 text-xs">
+              <button type="button" onClick={() => removeQuestion(qIndex)} className="text-red-600 dark:text-red-400 text-xs">
                 Quitar
               </button>
             )}
@@ -167,27 +167,27 @@ export default function EvaluationCreator({ courseId, topics, onCreated }: Props
                 value={opt.text}
                 onChange={(e) => updateOptionText(qIndex, oIndex, e.target.value)}
                 required
-                className="flex-1 border border-slate-300 rounded px-2 py-1"
+                className="flex-1 border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400 rounded px-2 py-1"
               />
             </div>
           ))}
-          <button type="button" onClick={() => addOption(qIndex)} className="pl-4 text-xs text-slate-600 underline">
+          <button type="button" onClick={() => addOption(qIndex)} className="pl-4 text-xs text-slate-600 dark:text-slate-400 underline">
             + Agregar opción
           </button>
         </div>
       ))}
 
-      <button type="button" onClick={addQuestion} className="text-slate-700 underline">
+      <button type="button" onClick={addQuestion} className="text-slate-700 dark:text-slate-300 underline">
         + Agregar pregunta
       </button>
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="flex gap-2">
-        <button type="submit" className="bg-slate-800 text-white px-4 py-2 rounded">
+        <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-700 dark:hover:bg-slate-600">
           Guardar evaluación
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 rounded border">
+        <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 rounded border border-slate-300 dark:border-slate-600 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700">
           Cancelar
         </button>
       </div>

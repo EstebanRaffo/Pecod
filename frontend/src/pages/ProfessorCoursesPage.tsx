@@ -52,53 +52,53 @@ export default function ProfessorCoursesPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Mis cursos (Profesor)</h1>
+    <div className="max-w-3xl mx-auto p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+      <h1 className="text-2xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Mis cursos (Profesor)</h1>
 
-      <form onSubmit={handleCreate} className="border rounded-lg p-4 mb-6 space-y-3">
-        <h2 className="font-semibold">Crear curso</h2>
+      <form onSubmit={handleCreate} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-6 space-y-3 bg-white dark:bg-slate-800">
+        <h2 className="font-semibold text-slate-800 dark:text-slate-100">Crear curso</h2>
         <input
           placeholder="Nombre del curso"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="w-full border border-slate-300 rounded px-3 py-2"
+          className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
         />
         <textarea
           placeholder="Descripción"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           required
-          className="w-full border border-slate-300 rounded px-3 py-2"
+          className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
         />
         <input
           placeholder="Área / categoría"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           required
-          className="w-full border border-slate-300 rounded px-3 py-2"
+          className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
         />
         <input
           placeholder="Tecnología"
           value={technology}
           onChange={(e) => setTechnology(e.target.value)}
           required
-          className="w-full border border-slate-300 rounded px-3 py-2"
+          className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
         />
         <textarea
           placeholder="Requerimientos Académicos"
           value={academicRequirements}
           onChange={(e) => setAcademicRequirements(e.target.value)}
-          className="w-full border border-slate-300 rounded px-3 py-2"
+          className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
         />
         <textarea
           placeholder="Aptitudes adquiridas al finalizar el curso"
           value={skills}
           onChange={(e) => setSkills(e.target.value)}
-          className="w-full border border-slate-300 rounded px-3 py-2"
+          className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" className="bg-slate-800 text-white px-4 py-2 rounded">
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-700 dark:hover:bg-slate-600">
           Crear curso
         </button>
       </form>
@@ -108,10 +108,10 @@ export default function ProfessorCoursesPage() {
           <Link
             key={course.id}
             to={`/profesor/cursos/${course.id}`}
-            className="flex items-center justify-between border rounded-lg p-4 hover:shadow-md transition"
+            className="flex items-center justify-between border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-slate-700/50 transition"
           >
             <div>
-              <div className="flex items-center gap-1.5 text-xs uppercase text-slate-500">
+              <div className="flex items-center gap-1.5 text-xs uppercase text-slate-500 dark:text-slate-400">
                 <span>{course.category}</span>
                 {course.technology && (
                   <>
@@ -120,11 +120,11 @@ export default function ProfessorCoursesPage() {
                   </>
                 )}
               </div>
-              <h3 className="font-semibold">{course.name}</h3>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100">{course.name}</h3>
             </div>
             <span
               className={`text-xs px-2 py-1 rounded ${
-                course.isPublished ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'
+                course.isPublished ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
               }`}
             >
               {course.isPublished ? 'Publicado' : 'Borrador'}
