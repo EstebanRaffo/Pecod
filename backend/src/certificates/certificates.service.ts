@@ -35,7 +35,7 @@ export class CertificatesService {
       where: { id: courseId },
       include: {
         topics: { select: { id: true } },
-        evaluations: { select: { id: true, title: true } },
+        evaluations: { select: { id: true, title: true, maxAttempts: true } }, // HU19: incluir maxAttempts
       },
     });
     if (!course) throw new NotFoundException('Curso no encontrado.');
@@ -85,7 +85,7 @@ export class CertificatesService {
         institution: { select: { id: true, name: true } },
         professor: { select: { id: true, name: true } },
         topics: { select: { id: true } },
-        evaluations: { select: { id: true } },
+        evaluations: { select: { id: true, maxAttempts: true } }, // HU19: incluir maxAttempts
       },
     });
     if (!course) throw new NotFoundException('Curso no encontrado.');
@@ -175,7 +175,7 @@ export class CertificatesService {
   }
 
   private async evaluateEligibility(
-    course: { topics: { id: string }[]; evaluations: { id: string }[] },
+    course: { topics: { id: string }[]; evaluations: { id: string; maxAttempts: number }[] }, // HU19: incluir maxAttempts
     enrollment: { topicProgress: { topicId: string }[] },
     studentId: string,
   ): Promise<CertificateStatus> {
@@ -201,8 +201,8 @@ export class CertificatesService {
         const passed = evalAttempts.some((a) => a.passed);
         if (!passed) {
           unpassedEvaluationsCount++;
-          // HU12 / HU18 CA4: límite de 2 intentos
-          if (evalAttempts.length >= 2) {
+          // HU19: comparar contra maxAttempts vigente de cada evaluación
+          if (evalAttempts.length >= evaluation.maxAttempts) {
             attemptsExhausted = true;
           }
         }

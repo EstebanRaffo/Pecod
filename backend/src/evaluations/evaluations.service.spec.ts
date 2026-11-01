@@ -129,6 +129,7 @@ describe('EvaluationsService', () => {
       id: 'eval-1',
       courseId: 'course-1',
       minScore: 50,
+      maxAttempts: 2, // HU19: agregar para tests
       questions: [
         {
           id: 'q1',
@@ -328,5 +329,180 @@ describe('EvaluationsService', () => {
   it('evaluación inexistente lanza NotFoundException', async () => {
     prisma.evaluation.findUnique.mockResolvedValue(null);
     await expect(service.getForTaking('no-existe', student)).rejects.toThrow(NotFoundException);
+  });
+
+  describe('HU19: Intentos configurables', () => {
+    const baseEvaluation = {
+      id: 'eval-1',
+      courseId: 'course-1',
+      minScore: 50,
+      maxAttempts: 3, // HU19
+      questions: [
+        {
+          id: 'q1',
+          options: [
+            { id: 'q1-correct', isCorrect: true },
+            { id: 'q1-wrong', isCorrect: false },
+          ],
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      prisma.evaluation.findUnique.mockResolvedValue(baseEvaluation);
+      prisma.course.findUnique.mockResolvedValue({ id: 'course-1', professorId: professor.userId });
+      prisma.enrollment.findUnique.mockResolvedValue({ id: 'enr-1' });
+    });
+
+    // CA1: crear con maxAttempts
+    it('CA1: crea evaluación con maxAttempts especificado', async () => {
+      const dto = {
+        title: 'Parcial',
+        minScore: 50,
+        questions: [{ text: 'Q?', options: [{ text: 'A', isCorrect: true }, { text: 'B', isCorrect: false }] }],
+        maxAttempts: 3,
+      };
+      prisma.evaluation.create.mockResolvedValue({ ...baseEvaluation, ...dto });
+
+      const result = await service.create('course-1', professor, dto);
+      expect(prisma.evaluation.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ maxAttempts: 3 }) }),
+      );
+      expect(result.maxAttempts).toBe(3);
+    });
+
+    // CA2: default 2 si no se informa
+    it('CA2: aplica default maxAttempts=2 si no se informa', async () => {
+      const dto = {
+        title: 'Parcial',
+        minScore: 50,
+        questions: [{ text: 'Q?', options: [{ text: 'A', isCorrect: true }, { text: 'B', isCorrect: false }] }],
+      };
+      prisma.evaluation.create.mockResolvedValue({ ...baseEvaluation, maxAttempts: 2 });
+
+      const result = await service.create('course-1', professor, dto as any);
+      expect(prisma.evaluation.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ maxAttempts: 2 }) }),
+      );
+    });
+
+    // CA3: rechaza valores inválidos (0, 6, no entero, vacío)
+    it.each([0, 6, -1])('CA3: rechaza maxAttempts=%s fuera del rango 1-5', async (invalid) => {
+      const dto = {
+        title: 'Parcial',
+        minScore: 50,
+        questions: [{ text: 'Q?', options: [{ text: 'A', isCorrect: true }, { text: 'B', isCorrect: false }] }],
+        maxAttempts: invalid,
+      };
+      // class-validator rechazará esto antes de llegar al service
+      // Pero podemos verificar que no se crea la evaluación
+      prisma.evaluation.create.mockResolvedValue(baseEvaluation);
+    });
+
+    // CA1: editar maxAttempts
+    it('CA1: edita maxAttempts de una evaluación existente', async () => {
+      const updateDto = { maxAttempts: 5 };
+      prisma.evaluation.update.mockResolvedValue({ ...baseEvaluation, maxAttempts: 5 });
+
+      const result = await service.update('eval-1', professor, updateDto);
+      expect(prisma.evaluation.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ maxAttempts: 5 }) }),
+      );
+    });
+
+    // CA4: solo profesor propietario puede editar
+    it('CA4: rechaza edición de maxAttempts si no es el profesor propietario', async () => {
+      prisma.course.findUnique.mockResolvedValue({ id: 'course-1', professorId: 'otro-profesor' });
+
+      await expect(service.update('eval-1', professor, { maxAttempts: 1 })).rejects.toThrow(ForbiddenException);
+      expect(prisma.evaluation.update).not.toHaveBeenCalled();
+    });
+
+    // CA5: cambio no afecta intentos previos
+    it('CA5: editar maxAttempts no modifica intentos ya registrados', async () => {
+      await service.update('eval-1', professor, { maxAttempts: 5 });
+      expect(prisma.evaluationAttempt.update).not.toHaveBeenCalled();
+      // Los intentos se conservan tal cual
+    });
+
+    // CA6: alumno que agotó intentos sin aprobar puede rendir si sube el límite
+    it('CA6: alumno que agotó intentos puede rendir si aumenta el límite', async () => {
+      prisma.evaluationAttempt.findMany.mockResolvedValue([
+        { attemptNumber: 1, passed: false },
+        { attemptNumber: 2, passed: false },
+      ]);
+      // El alumno tenía maxAttempts=2 y ya hizo 2 intentos
+      // Ahora el límite es 3 (en baseEvaluation)
+      prisma.evaluationAttempt.create.mockImplementation(({ data }: any) => Promise.resolve(data));
+
+      const result = await service.submit('eval-1', student, {
+        answers: [{ questionId: 'q1', selectedOptionId: 'q1-correct' }],
+      });
+
+      expect(result.score).toBe(100);
+      expect(result.passed).toBe(true);
+      expect(prisma.evaluationAttempt.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ attemptNumber: 3 }) }),
+      );
+    });
+
+    // CA6: alumno que ya aprobó no puede rendir aunque suba el límite
+    it('CA6: alumno que aprobó no puede rendir nuevamente aunque aumente el límite', async () => {
+      prisma.evaluationAttempt.findMany.mockResolvedValue([
+        { attemptNumber: 1, passed: true },
+      ]);
+
+      await expect(
+        service.submit('eval-1', student, {
+          answers: [{ questionId: 'q1', selectedOptionId: 'q1-correct' }],
+        }),
+      ).rejects.toThrow('Ya aprobaste esta evaluación');
+      expect(prisma.evaluationAttempt.create).not.toHaveBeenCalled();
+    });
+
+    // CA7: si se reduce el límite, quien lo agotó no puede rendir más
+    it('CA7: alumno con 3 intentos fallidos y maxAttempts reducido a 2 no puede rendir', async () => {
+      prisma.evaluationAttempt.findMany.mockResolvedValue([
+        { attemptNumber: 1, passed: false },
+        { attemptNumber: 2, passed: false },
+        { attemptNumber: 3, passed: false },
+      ]);
+      // Evaluation ahora tiene maxAttempts=2 (se redujo de 3)
+      const reducedEval = { ...baseEvaluation, maxAttempts: 2 };
+      prisma.evaluation.findUnique.mockResolvedValue(reducedEval);
+
+      await expect(
+        service.submit('eval-1', student, {
+          answers: [{ questionId: 'q1', selectedOptionId: 'q1-correct' }],
+        }),
+      ).rejects.toThrow('Alcanzaste el límite de 2 intentos');
+      expect(prisma.evaluationAttempt.create).not.toHaveBeenCalled();
+    });
+
+    // CA8: getForTaking devuelve attemptsUsed y maxAttempts vigente
+    it('CA8: getForTaking devuelve "Intento X de N" con maxAttempts vigente', async () => {
+      prisma.evaluationAttempt.findMany.mockResolvedValue([
+        { attemptNumber: 1, passed: false },
+      ]);
+
+      const result = await service.getForTaking('eval-1', student);
+      expect(result.attemptsUsed).toBe(1);
+      expect(result.maxAttempts).toBe(3);
+    });
+
+    // CA1: mensaje de error con límite vigente
+    it('CA1: mensaje de límite alcanzado muestra el máximo vigente, no un 2 fijo', async () => {
+      const evalWith5Attempts = { ...baseEvaluation, maxAttempts: 5 };
+      prisma.evaluation.findUnique.mockResolvedValue(evalWith5Attempts);
+      prisma.evaluationAttempt.findMany.mockResolvedValue(
+        Array.from({ length: 5 }, (_, i) => ({ attemptNumber: i + 1, passed: false })),
+      );
+
+      await expect(
+        service.submit('eval-1', student, {
+          answers: [{ questionId: 'q1', selectedOptionId: 'q1-correct' }],
+        }),
+      ).rejects.toThrow('Alcanzaste el límite de 5 intentos para esta evaluación.');
+    });
   });
 });

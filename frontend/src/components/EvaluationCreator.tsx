@@ -29,6 +29,7 @@ function emptyQuestion(): QuestionDraft {
 export default function EvaluationCreator({ courseId, topics, onCreated }: Props) {
   const [title, setTitle] = useState('');
   const [minScore, setMinScore] = useState(60);
+  const [maxAttempts, setMaxAttempts] = useState(2); // HU19
   const [topicId, setTopicId] = useState('');
   const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
   const [error, setError] = useState<string | null>(null);
@@ -80,11 +81,13 @@ export default function EvaluationCreator({ courseId, topics, onCreated }: Props
       await api.post(`/courses/${courseId}/evaluations`, {
         title,
         minScore,
+        maxAttempts, // HU19
         topicId: topicId || null,
         questions,
       });
       setTitle('');
       setMinScore(60);
+      setMaxAttempts(2); // HU19: resetear default
       setTopicId('');
       setQuestions([emptyQuestion()]);
       setOpen(false);
@@ -120,6 +123,19 @@ export default function EvaluationCreator({ courseId, topics, onCreated }: Props
           onChange={(e) => setMinScore(Number(e.target.value))}
           className="w-32 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
           title="Puntaje mínimo de aprobación"
+        />
+        {/* HU19: Campo para configurar intentos máximos */}
+        <input
+          type="number"
+          min={1}
+          max={5}
+          value={maxAttempts}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            if (val >= 1 && val <= 5) setMaxAttempts(val);
+          }}
+          className="w-32 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
+          title="Cantidad máxima de intentos (1-5)"
         />
       </div>
 

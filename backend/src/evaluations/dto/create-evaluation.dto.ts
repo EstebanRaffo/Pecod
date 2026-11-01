@@ -49,4 +49,12 @@ export class CreateEvaluationDto {
   @Type(() => QuestionInputDto)
   @ArrayMinSize(1, { message: 'La evaluación debe tener al menos una pregunta.' })
   questions: QuestionInputDto[];
+
+  // HU19: intentos configurables
+  @IsOptional()
+  @IsInt({ message: 'La cantidad de intentos debe ser un número entero.' })
+  @Min(1, { message: 'El mínimo de intentos es 1.' })
+  @Max(5, { message: 'El máximo de intentos es 5.' })
+  maxAttempts?: number;
 }
+

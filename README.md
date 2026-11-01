@@ -1,6 +1,6 @@
-# PECOD - V2
+# PECOD - V3
 
-Plataforma de cursos on-demand multi-institucional. La versión 2 incluye las funcionalidades definidas hasta la HU-18 del TP Integrador de Testing de Aplicaciones.
+Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-19 del TP Integrador de Testing de Aplicaciones.
 
 ## Stack (decisiones fijadas para V1)
 

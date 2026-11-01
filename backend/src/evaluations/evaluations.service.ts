@@ -11,8 +11,6 @@ import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { UpdateEvaluationDto } from './dto/update-evaluation.dto';
 import { SubmitAttemptDto } from './dto/submit-attempt.dto';
 
-const MAX_ATTEMPTS = 2; // HU12: "el Alumno tiene hasta 2 intentos por evaluación en V1"
-
 interface EvaluationSnapshot {
   id: string;
   title: string;
@@ -66,6 +64,7 @@ export class EvaluationsService {
         topicId: dto.topicId,
         title: dto.title,
         minScore: dto.minScore,
+        maxAttempts: dto.maxAttempts ?? 2, // HU19: default 2 si no se informa
         questions: {
           create: dto.questions.map((q, index) => ({
             text: q.text,
@@ -89,6 +88,7 @@ export class EvaluationsService {
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(dto.minScore !== undefined ? { minScore: dto.minScore } : {}),
+        ...(dto.maxAttempts !== undefined ? { maxAttempts: dto.maxAttempts } : {}), // HU19
       },
     });
   }
@@ -140,7 +140,7 @@ export class EvaluationsService {
       where: { evaluationId, studentId: student.userId },
       orderBy: { attemptNumber: 'asc' },
     });
-    this.assertCanAttempt(attempts);
+    this.assertCanAttempt(attempts, evaluation.maxAttempts); // HU19: pasar maxAttempts
     const version = this.getAttemptVersion(evaluation, attempts);
 
     return {
@@ -148,7 +148,7 @@ export class EvaluationsService {
       title: version.title,
       minScore: version.minScore,
       attemptsUsed: attempts.length,
-      maxAttempts: MAX_ATTEMPTS,
+      maxAttempts: evaluation.maxAttempts, // HU19: devolver maxAttempts vigente
       questions: version.questions.map((q) => ({
         id: q.id,
         text: q.text,
@@ -157,7 +157,7 @@ export class EvaluationsService {
     };
   }
 
-  // HU12: corrige automáticamente y aplica el límite de 2 intentos.
+  // HU12: corrige automáticamente y aplica el límite de intentos configurado.
   async submit(evaluationId: string, student: AuthenticatedUser, dto: SubmitAttemptDto) {
     const evaluation = await this.getEvaluationOrThrow(evaluationId);
     await this.assertEnrolled(evaluation.courseId, student);
@@ -166,7 +166,7 @@ export class EvaluationsService {
       where: { evaluationId, studentId: student.userId },
       orderBy: { attemptNumber: 'asc' },
     });
-    this.assertCanAttempt(attempts);
+    this.assertCanAttempt(attempts, evaluation.maxAttempts); // HU19: pasar maxAttempts
     const version = this.getAttemptVersion(evaluation, attempts);
 
     let correctCount = 0;
@@ -238,15 +238,15 @@ export class EvaluationsService {
     }
   }
 
-  private assertCanAttempt(attempts: { passed: boolean }[]) {
+  private assertCanAttempt(attempts: { passed: boolean }[], maxAttempts: number) { // HU19: parámetro maxAttempts
     // HU12: "si la evaluación ya fue aprobada, el sistema informa la restricción correspondiente"
     if (attempts.some((a) => a.passed)) {
       throw new BadRequestException('Ya aprobaste esta evaluación; no podés volver a rendirla.');
     }
-    // HU12: "el Alumno tiene hasta 2 intentos... si desaprueba ambos, no permite un nuevo intento"
-    if (attempts.length >= MAX_ATTEMPTS) {
+    // HU12: "el Alumno tiene hasta N intentos... si desaprueba todos, no permite un nuevo intento"
+    if (attempts.length >= maxAttempts) { // HU19: usar parámetro en lugar de constante
       throw new BadRequestException(
-        `Alcanzaste el límite de ${MAX_ATTEMPTS} intentos para esta evaluación.`,
+        `Alcanzaste el límite de ${maxAttempts} intentos para esta evaluación.`,
       );
     }
   }

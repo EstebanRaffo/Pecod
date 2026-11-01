@@ -171,4 +171,175 @@ describe('HU11, HU12 - Evaluaciones y límite de 2 intentos', () => {
       });
     });
   });
+
+  // HU19: Intentos configurables
+  describe('HU19 - Intentos configurables', () => {
+    it('HU19 CA1: Profesor crea evaluación con maxAttempts=1', () => {
+      cy.seedFullScenario().then(({ professor, courseId }) => {
+        cy.apiLogin(professor.email, professor.password);
+        cy.visit(`/profesor/cursos/${courseId}`);
+
+        cy.get('[aria-label="Editar Evaluaciones"]').click();
+        cy.contains('+ Crear evaluación').click();
+        cy.get('input[placeholder="Título de la evaluación"]').type('Solo un intento');
+        // Buscar el tercer input en el flex (title, minScore, maxAttempts)
+        cy.get('input[type="number"]').eq(1).clear().type('1'); // maxAttempts = 1
+        cy.get('input[placeholder="Pregunta 1"]').type('¿1+1?');
+        cy.get('input[placeholder="Opción 1"]').type('2');
+        cy.get('input[placeholder="Opción 2"]').type('3');
+        cy.get('input[type="radio"]').first().check({ force: true });
+        cy.contains('button', 'Guardar evaluación').click();
+
+        cy.contains('Solo un intento').should('be.visible');
+      });
+    });
+
+    it('HU19 CA8: Alumno ve "Intento 1 de 1" en evaluación con maxAttempts=1', () => {
+      cy.env(['apiUrl']).then(({ apiUrl }) => {
+        cy.seedFullScenario().then(({ professor, student, courseId }) => {
+          cy.apiLogin(professor.email, professor.password).then(({ token }) => {
+            cy.request({
+              method: 'POST',
+              url: `${apiUrl}/courses/${courseId}/evaluations`,
+              headers: { Authorization: `Bearer ${token}` },
+              body: {
+                title: 'Un intento',
+                minScore: 50,
+                maxAttempts: 1,
+                questions: [{
+                  text: '¿Verdadero o falso?',
+                  options: [
+                    { text: 'Verdadero', isCorrect: true },
+                    { text: 'Falso', isCorrect: false },
+                  ],
+                }],
+              },
+            }).then(({ body }) => {
+              cy.apiLogin(student.email, student.password).then(({ token: studentToken }) => {
+                cy.request({
+                  method: 'POST',
+                  url: `${apiUrl}/courses/${courseId}/enroll`,
+                  headers: { Authorization: `Bearer ${studentToken}` },
+                });
+
+                cy.visit(`/evaluaciones/${body.id}`);
+                cy.contains('Intento 1 de 1').should('be.visible');
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('HU19 CA1: Profesor edita maxAttempts de una evaluación existente', () => {
+      cy.env(['apiUrl']).then(({ apiUrl }) => {
+        cy.seedFullScenario().then(({ professor, courseId }) => {
+          cy.apiLogin(professor.email, professor.password).then(({ token }) => {
+            cy.request({
+              method: 'POST',
+              url: `${apiUrl}/courses/${courseId}/evaluations`,
+              headers: { Authorization: `Bearer ${token}` },
+              body: {
+                title: 'Editar intentos',
+                minScore: 50,
+                maxAttempts: 2,
+                questions: [{
+                  text: 'Pregunta?',
+                  options: [
+                    { text: 'A', isCorrect: true },
+                    { text: 'B', isCorrect: false },
+                  ],
+                }],
+              },
+            }).then(({ body }) => {
+              cy.visit(`/profesor/cursos/${courseId}`);
+              cy.get('[aria-label="Editar Evaluaciones"]').click();
+              cy.contains('Editar intentos').click();
+              cy.get('[aria-label="Ver Editar intentos"]').click();
+
+              // Buscar el botón de editar para maxAttempts y cambiar a 4
+              cy.contains('Máximo de intentos:').parent().within(() => {
+                cy.get('button[title*="intentos"]').click();
+              });
+              cy.get('input[type="number"]').last().clear().type('4');
+              cy.contains('button', 'Ok').click();
+
+              cy.contains('Máximo de intentos: 4').should('be.visible');
+            });
+          });
+        });
+      });
+    });
+
+    it('HU19 CA6: Alumno agotó intentos con limit=2, profesor sube a 3, alumno puede rendir nuevamente', () => {
+      cy.env(['apiUrl']).then(({ apiUrl }) => {
+        cy.seedFullScenario().then(({ professor, student, courseId }) => {
+          let evaluationId = '';
+          cy.apiLogin(professor.email, professor.password).then(({ token }) => {
+            cy.request({
+              method: 'POST',
+              url: `${apiUrl}/courses/${courseId}/evaluations`,
+              headers: { Authorization: `Bearer ${token}` },
+              body: {
+                title: 'Aumentar intentos',
+                minScore: 100, // força desaprobación
+                maxAttempts: 2,
+                questions: [{
+                  text: 'Pregunta imposible',
+                  options: [
+                    { text: 'Opción A', isCorrect: true },
+                    { text: 'Opción B', isCorrect: false },
+                  ],
+                }],
+              },
+            }).then(({ body }) => {
+              evaluationId = body.id;
+              const wrongOptionId = body.questions[0].options.find((o: any) => !o.isCorrect).id;
+
+              // Alumno falla 2 intentos
+              cy.apiLogin(student.email, student.password).then(({ token: studentToken }) => {
+                cy.request({
+                  method: 'POST',
+                  url: `${apiUrl}/courses/${courseId}/enroll`,
+                  headers: { Authorization: `Bearer ${studentToken}` },
+                });
+
+                cy.visit(`/evaluaciones/${evaluationId}`);
+                cy.get(`input[value="${wrongOptionId}"]`).check({ force: true });
+                cy.contains('button', 'Enviar evaluación').click();
+                cy.contains('Desaprobado').should('be.visible');
+
+                cy.visit(`/evaluaciones/${evaluationId}`);
+                cy.contains('Intento 2 de 2').should('be.visible');
+                cy.get(`input[value="${wrongOptionId}"]`).check({ force: true });
+                cy.contains('button', 'Enviar evaluación').click();
+                cy.contains('Desaprobado').should('be.visible');
+
+                // Intento 3 bloqueado
+                cy.visit(`/evaluaciones/${evaluationId}`);
+                cy.contains('Alcanzaste el límite de 2 intentos').should('be.visible');
+
+                // Profesor aumenta el límite a 3
+                cy.apiLogin(professor.email, professor.password);
+                cy.request({
+                  method: 'PATCH',
+                  url: `${apiUrl}/evaluations/${evaluationId}`,
+                  headers: { Authorization: `Bearer ${token}` },
+                  body: { maxAttempts: 3 },
+                });
+
+                // Alumno ahora puede rendir el 3er intento
+                cy.apiLogin(student.email, student.password);
+                cy.visit(`/evaluaciones/${evaluationId}`);
+                cy.contains('Intento 3 de 3').should('be.visible');
+                cy.get(`input[value="${wrongOptionId}"]`).check({ force: true });
+                cy.contains('button', 'Enviar evaluación').click();
+                cy.contains('Desaprobado').should('be.visible');
+              });
+            });
+          });
+        });
+      });
+    });
+  });
 });

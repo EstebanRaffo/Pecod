@@ -29,7 +29,7 @@ describe('CertificatesService (HU-18: Certificado de finalización)', () => {
     institution: { id: 'inst-1', name: 'Universidad Argentina de la Empresa' },
     professor: { id: 'prof-1', name: 'Dra. María González' },
     topics: [{ id: 'topic-1' }, { id: 'topic-2' }],
-    evaluations: [{ id: 'eval-1', title: 'Examen Final' }],
+    evaluations: [{ id: 'eval-1', title: 'Examen Final', maxAttempts: 2 }], // HU19: agregar maxAttempts
   };
 
   beforeEach(() => {
@@ -321,6 +321,97 @@ describe('CertificatesService (HU-18: Certificado de finalización)', () => {
 
       const download = await service.download('course-1', student);
       expect(download.code).toBe('CERT-UNPUB-123');
+    });
+  });
+
+  describe('HU19: Intentos configurables en certificados', () => {
+    it('CA9: Alumno sin intentos en evaluación no se marca como "intentos agotados"', async () => {
+      prisma.course.findUnique.mockResolvedValue(baseCourse);
+      prisma.enrollment.findUnique.mockResolvedValue({
+        id: 'enr-1',
+        certificate: null,
+        topicProgress: [{ topicId: 'topic-1' }, { topicId: 'topic-2' }],
+      });
+      prisma.evaluationAttempt.findMany.mockResolvedValue([]); // Sin intentos
+
+      const status = await service.getStatus('course-1', student);
+      expect(status.attemptsExhausted).toBe(false);
+    });
+
+    it('CA9: Alumno con 2 intentos fallidos y maxAttempts=3 no está agotado', async () => {
+      const courseWith3Attempts = {
+        ...baseCourse,
+        evaluations: [{ id: 'eval-1', title: 'Examen Final', maxAttempts: 3 }],
+      };
+      prisma.course.findUnique.mockResolvedValue(courseWith3Attempts);
+      prisma.enrollment.findUnique.mockResolvedValue({
+        id: 'enr-1',
+        certificate: null,
+        topicProgress: [{ topicId: 'topic-1' }, { topicId: 'topic-2' }],
+      });
+      prisma.evaluationAttempt.findMany.mockResolvedValue([
+        { evaluationId: 'eval-1', passed: false },
+        { evaluationId: 'eval-1', passed: false },
+      ]);
+
+      const status = await service.getStatus('course-1', student);
+      expect(status.attemptsExhausted).toBe(false);
+      expect(status.eligible).toBe(false); // pero no está elegible por intentos
+      expect(status.reasons).toContain('Faltan evaluaciones por aprobar.');
+    });
+
+    it('CA9: Alumno con 3 intentos fallidos y maxAttempts=3 está agotado', async () => {
+      const courseWith3Attempts = {
+        ...baseCourse,
+        evaluations: [{ id: 'eval-1', title: 'Examen Final', maxAttempts: 3 }],
+      };
+      prisma.course.findUnique.mockResolvedValue(courseWith3Attempts);
+      prisma.enrollment.findUnique.mockResolvedValue({
+        id: 'enr-1',
+        certificate: null,
+        topicProgress: [{ topicId: 'topic-1' }, { topicId: 'topic-2' }],
+      });
+      prisma.evaluationAttempt.findMany.mockResolvedValue([
+        { evaluationId: 'eval-1', passed: false },
+        { evaluationId: 'eval-1', passed: false },
+        { evaluationId: 'eval-1', passed: false },
+      ]);
+
+      const status = await service.getStatus('course-1', student);
+      expect(status.attemptsExhausted).toBe(true);
+      expect(status.eligible).toBe(false);
+      expect(status.reasons).toContain(
+        'Agotaste los intentos de una evaluación sin aprobarla; no podés obtener el certificado.',
+      );
+    });
+
+    it('CA9: Alumno aprobó 1 evaluación pero agotó intentos en otra, no es elegible', async () => {
+      const courseWithTwoEvals = {
+        ...baseCourse,
+        evaluations: [
+          { id: 'eval-1', title: 'Parcial 1', maxAttempts: 2 },
+          { id: 'eval-2', title: 'Parcial 2', maxAttempts: 3 },
+        ],
+      };
+      prisma.course.findUnique.mockResolvedValue(courseWithTwoEvals);
+      prisma.enrollment.findUnique.mockResolvedValue({
+        id: 'enr-1',
+        certificate: null,
+        topicProgress: [{ topicId: 'topic-1' }, { topicId: 'topic-2' }],
+      });
+      prisma.evaluationAttempt.findMany.mockResolvedValue([
+        { evaluationId: 'eval-1', passed: true },
+        { evaluationId: 'eval-2', passed: false },
+        { evaluationId: 'eval-2', passed: false },
+        { evaluationId: 'eval-2', passed: false },
+      ]);
+
+      const status = await service.getStatus('course-1', student);
+      expect(status.attemptsExhausted).toBe(true);
+      expect(status.eligible).toBe(false);
+      expect(status.reasons).toContain(
+        'Agotaste los intentos de una evaluación sin aprobarla; no podés obtener el certificado.',
+      );
     });
   });
 });

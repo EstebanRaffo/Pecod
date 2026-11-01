@@ -175,10 +175,11 @@ model Evaluation {
   topicId  String? // null = evaluación de cierre de curso (HU11)
   topic    Topic?  @relation(fields: [topicId], references: [id])
 
-  title     String
-  minScore  Int // puntaje mínimo de aprobación, 0-100 (HU11)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  title       String
+  minScore    Int // puntaje mínimo de aprobación, 0-100 (HU11)
+  maxAttempts Int @default(2) // HU19: intentos configurables, default 2
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   questions Question[]
   attempts  EvaluationAttempt[]
