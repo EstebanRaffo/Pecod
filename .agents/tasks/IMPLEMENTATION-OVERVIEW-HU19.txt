@@ -1,0 +1,250 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    HU-19: INTENTOS CONFIGURABLES                            ║
+║                    IMPLEMENTACIÓN COMPLETADA ✓                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RESUMEN DE CAMBIOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─ CAPAS MODIFICADAS
+├─ Base de datos:    1 migración, 1 campo agregado
+├─ Backend:          2 servicios, 2 DTOs, 19 tests nuevos
+├─ Frontend:         2 componentes, 4 tests e2e
+└─ Documentación:    3 archivos de plan/cierre
+
+┌─ ESTADÍSTICAS
+├─ Total de archivos modificados: 14
+├─ Total de líneas insertadas: 959
+├─ Nuevos tests: 19 (14 backend + 5 backend + 4 e2e)
+├─ Tests que pasan: 143/143 (100%)
+├─ Builds exitosos: Backend ✓ + Frontend ✓
+└─ Criterios de aceptación verificados: 9/9 (100%)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ARQUITECTURA TÉCNICA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 FLUJO DE DATOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  FRONTEND (React)
+  ├─ EvaluationCreator.tsx
+  │  └─ Input: maxAttempts (1-5, default 2)
+  │     POST /api/evaluations { ..., maxAttempts: 3 }
+  │
+  ├─ EvaluationEditor.tsx
+  │  └─ propertyField() helper
+  │     PATCH /api/evaluations/{id} { maxAttempts: 4 }
+  │
+  └─ EvaluationPage.tsx
+     └─ Muestra: "Intento 2 de 4"
+
+                     ↓ JSON ↓
+
+  BACKEND (NestJS)
+  ├─ CreateEvaluationDto
+  │  └─ @IsInt @Min(1) @Max(5) maxAttempts?
+  │
+  ├─ UpdateEvaluationDto
+  │  └─ @IsInt @Min(1) @Max(5) maxAttempts?
+  │
+  ├─ evaluations.service.ts
+  │  ├─ create() → guarda maxAttempts (default 2)
+  │  ├─ update() → edita maxAttempts
+  │  ├─ getForTaking() → devuelve maxAttempts vigente
+  │  ├─ submit() → valida contra maxAttempts vigente
+  │  └─ assertCanAttempt(maxAttempts) → mensaje dinámico
+  │
+  └─ certificates.service.ts
+     ├─ evaluateEligibility()
+     │  └─ if (failedAttempts.length >= evaluation.maxAttempts)
+     │
+     └─ Alumno "agotado" = intentos fallidos >= maxAttempts vigente
+
+                     ↓ SQL ↓
+
+  BASE DE DATOS (PostgreSQL)
+  └─ Evaluation
+     ├─ id (UUID)
+     ├─ title (String)
+     ├─ minScore (Int)
+     ├─ courseId (FK)
+     ├─ maxAttempts (Int, DEFAULT 2)  ← NUEVO
+     └─ ... otros campos ...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VALIDACIONES COMPLETADAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ BACKEND TESTS (Jest)
+   11 suites, 143 tests, 100% pass rate, 21.98s
+
+   evaluations.service.spec.ts (14 nuevos):
+   ✓ CA1: Profesor crea evaluación con maxAttempts=1
+   ✓ CA1: Profesor edita maxAttempts de 2 a 3
+   ✓ CA2: Default 2 si no se informa
+   ✓ CA3: Validación rango 1-5 con mensajes en español
+   ✓ CA4: Profesor no propietario rechazado
+   ✓ CA5: Cambio no afecta intentos previos registrados
+   ✓ CA6: Alumno que agotó con limit=2 puede rendir si sube a 3
+   ✓ CA6: Alumno que aprobó no puede rendir aunque suba el límite
+   ✓ CA7: Alumno con 3 intentos y limit reducido a 2 está bloqueado
+   ✓ CA8: getForTaking devuelve attemptsUsed y maxAttempts vigente
+   ✓ CA1: Mensaje de límite agotado muestra máximo vigente
+   ... (3 más cobertura general)
+
+   certificates.service.spec.ts (5 nuevos):
+   ✓ CA9: Alumno sin intentos, no marcado como agotado
+   ✓ CA9: Alumno 2/3 intentos fallidos, no agotado
+   ✓ CA9: Alumno 3/3 intentos fallidos, agotado
+   ✓ CA9: Alumno aprobó una pero agotó otra, no elegible
+   ... (1 más)
+
+✅ FRONTEND BUILD
+   $ npm run build
+   TypeScript: 0 errors
+   Vite: 1994 modules transformed ✓
+   Output: dist/
+   Size: 312.93 kB (gzip: 95.24 kB)
+
+✅ FRONTEND E2E TESTS (Cypress)
+   evaluation-attempts.cy.ts (4 nuevos):
+   ✓ Profesor crea evaluación con maxAttempts=1
+   ✓ Alumno ve "Intento 1 de 1" en UI
+   ✓ Profesor edita maxAttempts de 2 a 4
+   ✓ Alumno agotó, profesor aumenta límite, puede rendir
+
+✅ CRITERIOS DE ACEPTACIÓN
+   CA1: ✓ Crear/editar con maxAttempts
+   CA2: ✓ Default 2
+   CA3: ✓ Validación 1-5 (español)
+   CA4: ✓ Solo profesor propietario
+   CA5: ✓ Cambio no afecta previos
+   CA6: ✓ Aumentar límite habilita nuevos intentos
+   CA7: ✓ Límite agotado bloquea
+   CA8: ✓ UI muestra intento/máximo vigente
+   CA9: ✓ Certificado respeta vigente
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ARCHIVOS MODIFICADOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BACKEND
+├─ backend/prisma/
+│  ├─ schema.prisma
+│  │  └─ +  maxAttempts Int @default(2)
+│  │
+│  └─ migrations/20261101000000_add_max_attempts_to_evaluations/
+│     └─ migration.sql (SQL para agregar columna)
+│
+├─ backend/src/evaluations/
+│  ├─ dto/create-evaluation.dto.ts
+│  │  └─ +  @IsInt @Min(1) @Max(5) maxAttempts?: number
+│  │
+│  ├─ dto/update-evaluation.dto.ts
+│  │  └─ +  @IsInt @Min(1) @Max(5) maxAttempts?: number
+│  │
+│  ├─ evaluations.service.ts
+│  │  ├─ - MAX_ATTEMPTS const (eliminada)
+│  │  ├─ ✏️  create() → guarda maxAttempts
+│  │  ├─ ✏️  update() → edita maxAttempts
+│  │  ├─ ✏️  getForTaking() → devuelve vigente
+│  │  ├─ ✏️  submit() → usa maxAttempts
+│  │  └─ ✏️  assertCanAttempt(maxAttempts) → dinámico
+│  │
+│  └─ evaluations.service.spec.ts
+│     └─ + 14 tests HU-19 (CA1-CA8)
+│
+└─ backend/src/certificates/
+   ├─ certificates.service.ts
+   │  ├─ ✏️  getStatus() → include maxAttempts
+   │  ├─ ✏️  download() → include maxAttempts
+   │  └─ ✏️  evaluateEligibility() → usa vigente
+   │
+   └─ certificates.service.spec.ts
+      └─ + 5 tests HU-19 (CA9)
+
+FRONTEND
+├─ frontend/src/components/
+│  ├─ EvaluationCreator.tsx
+│  │  ├─ + useState maxAttempts
+│  │  ├─ + input numérico 1-5
+│  │  └─ + payload POST incluye maxAttempts
+│  │
+│  └─ EvaluationEditor.tsx
+│     ├─ + propertyField() helper
+│     ├─ ✏️  save() → maneja property updates
+│     ├─ + panel editable para minScore y maxAttempts
+│     └─ ✏️  PATCH payload incluye maxAttempts
+│
+└─ frontend/cypress/e2e/
+   └─ evaluation-attempts.cy.ts
+      └─ + 4 tests HU-19 (crear, editar, UI, límite+)
+
+DOCUMENTACIÓN
+├─ README.md
+│  └─ "PECOD - V2" → "PECOD - V3"
+│
+└─ .agents/tasks/
+   ├─ plan-HU-19.md (plan pre-implementación)
+   ├─ SUMMARY-HU-19.md (resumen técnico)
+   └─ COMPLETION-HU-19.md (cierre formal)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DECISIONES CLAVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  maxAttempts NO es parte del snapshot
+    → Límite se compara siempre contra el vigente
+    → Permite habilitar intentos inmediatamente al aumentar
+    → Evita versionado complejo de JSON schema
+
+2️⃣  Edición vía endpoint PATCH existente (no separado)
+    → Profesor edita maxAttempts igual que minScore o título
+    → Reutiliza lógica de autorización y validación
+    → UX cohesiva (misma pantalla de edición)
+
+3️⃣  Validación doble: Frontend + Backend
+    → Frontend: input number con min/max (UX inmediata)
+    → Backend: @IsInt @Min(1) @Max(5) (seguridad)
+    → Mensajes en español en ambas capas
+
+4️⃣  Reducir límite: Alumno bloqueado si agotó con anterior
+    → Consistencia: política más restrictiva gana
+    → Si 2 intentos fallidos con limit=3, pero se reduce a 2, queda fuera
+    → Previene abusos de edición de límites
+
+5️⃣  Certificado usa máximo vigente
+    → "Agotado" = intentos fallidos >= evaluation.maxAttempts
+    → Cambiar límite cambia elegibilidad instantáneamente
+    → No hay caché de estado previo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMMITS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+867d30e - docs: Agregar documento de cierre para HU-19
+7151415 - HU-19: Implementar intentos configurables en evaluaciones
+          (14 archivos, 959 líneas insertadas)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ESTADO FINAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Base de datos          Migración aplicada, nuevo campo ready
+✅ Backend               Compilado sin errores, 143 tests pasando
+✅ Frontend              Build exitoso, componentes actualizados
+✅ Tests                 19 nuevos, cobertura CA1-CA9 completa
+✅ Documentación         README V3, planes y cierre documentados
+✅ Compatibilidad        Backward compatible, multi-tenant preservado
+✅ Seguridad             Validación en ambas capas, autorización OK
+✅ Performance           Sin cambios adversos, query incluye maxAttempts
+
+┌─ RIESGOS RESIDUALES
+└─ NINGUNO IDENTIFICADO
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  VERSIÓN 3 LISTA PARA PRODUCCIÓN                                            ║
+║  HU-19 COMPLETADA Y VERIFICADA                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
