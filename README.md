@@ -1,6 +1,6 @@
-# PECOD — V1
+# PECOD - V2
 
-Plataforma de cursos on-demand multi-institucional. Esqueleto de proyecto para arrancar el desarrollo de V1, generado a partir de las 12 Historias de Usuario definidas en el TP Integrador de Testing de Aplicaciones.
+Plataforma de cursos on-demand multi-institucional. La versión 2 incluye las funcionalidades definidas hasta la HU-18 del TP Integrador de Testing de Aplicaciones.
 
 ## Stack (decisiones fijadas para V1)
 
@@ -125,6 +125,25 @@ npm run start:dev
 ```
 
 Pruebas: `npm test -- --runInBand topics.service.spec notifications.service.spec` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/notifications.cy.ts` desde `frontend`. El spec comprueba recepcion en una sesion abierta, orden, lectura persistente, navegacion al tema, vista movil, exclusiones y aislamiento entre alumnos.
+
+### Certificado de finalización (HU18)
+
+El Alumno inscripto puede consultar si tiene disponible su certificado desde la cursada y descargarlo en PDF. Para obtenerlo, el curso debe tener al menos un tema, todos sus temas deben estar vistos y todas sus evaluaciones aprobadas. Si agota los dos intentos de una evaluación sin aprobarla, no puede obtener el certificado; la pantalla informa qué requisito falta. Un curso despublicado sigue disponible para sus alumnos inscriptos.
+
+La primera descarga emite el certificado con un código único y conserva una copia de los datos del Alumno, curso, institución, Profesor y fecha de emisión. Las descargas posteriores entregan el mismo certificado, aunque después cambie el contenido del curso. En “Mis cursos” se identifica el curso finalizado con el certificado disponible.
+
+Endpoints autenticados, exclusivos de `STUDENT` y limitados a cursos de la institución del Alumno (base `/api`):
+- `GET /courses/:courseId/certificate/status`: devuelve si el certificado está habilitado, si ya fue emitido y los requisitos pendientes.
+- `GET /courses/:courseId/certificate`: emite el certificado si corresponde y descarga el PDF; si ya existe, descarga el mismo certificado.
+
+Para una base existente, detener el backend y ejecutar desde `backend`:
+
+```bash
+npx prisma migrate deploy
+npm run prisma:generate
+```
+
+Pruebas: `npm test -- --runInBand certificates.service.spec.ts enrollments.service.spec.ts` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/certificates.cy.ts` desde `frontend`.
 
 ### Edicion de preguntas y respuestas de evaluaciones
 
