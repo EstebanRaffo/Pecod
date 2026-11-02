@@ -50,7 +50,6 @@ model User {
   evaluationAttempts EvaluationAttempt[]
   notifications      Notification[]
   certificates       Certificate[]
-  courseReviews      CourseReview[]
 
   @@index([institutionId])
   @@map("users")
@@ -78,7 +77,6 @@ model Course {
   evaluations Evaluation[]
   notifications Notification[]
   certificates  Certificate[]
-  reviews     CourseReview[]
 
   @@index([institutionId, isPublished])
   @@index([category])
@@ -177,11 +175,10 @@ model Evaluation {
   topicId  String? // null = evaluación de cierre de curso (HU11)
   topic    Topic?  @relation(fields: [topicId], references: [id])
 
-  title       String
-  minScore    Int // puntaje mínimo de aprobación, 0-100 (HU11)
-  maxAttempts Int @default(2) // HU19: intentos configurables, default 2
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  title     String
+  minScore  Int // puntaje mínimo de aprobación, 0-100 (HU11)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   questions Question[]
   attempts  EvaluationAttempt[]
@@ -250,22 +247,4 @@ model Certificate {
   @@index([studentId])
   @@index([courseId])
   @@map("certificates")
-}
-
-// HU20: Reseñas de cursos
-model CourseReview {
-  id        String   @id @default(uuid())
-  courseId  String
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  studentId String
-  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  rating    Int // 1-5 estrellas, validado en backend
-  comment   String? // Opcional, máx 1000 caracteres
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([courseId, studentId])
-  @@index([courseId])
-  @@index([studentId])
-  @@map("course_reviews")
 }
