@@ -5,6 +5,7 @@ type ModelMock = {
   findUnique: jest.Mock;
   findFirst: jest.Mock;
   findMany: jest.Mock;
+  groupBy: jest.Mock;
   create: jest.Mock;
   createMany: jest.Mock;
   update: jest.Mock;
@@ -18,6 +19,7 @@ function createModelMock(): ModelMock {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
     findMany: jest.fn(),
+    groupBy: jest.fn(),
     create: jest.fn(),
     createMany: jest.fn(),
     update: jest.fn(),
@@ -42,6 +44,7 @@ export function createMockPrismaService() {
     questionOption: createModelMock(),
     evaluationAttempt: createModelMock(),
     certificate: createModelMock(),
+    courseReview: createModelMock(),
     $transaction: jest.fn(),
   };
   prisma.enrollment.findMany.mockResolvedValue([]);
