@@ -18,6 +18,7 @@ export interface ReviewStatistics {
     rating: number;
     comment?: string;
     studentName: string;
+    isOwnReview: boolean;
     createdAt: string;
     updatedAt: string;
   }>;

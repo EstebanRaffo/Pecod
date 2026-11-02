@@ -12,6 +12,7 @@ import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -28,6 +29,8 @@ import { ReviewsModule } from './reviews/reviews.module';
     UploadsModule, // HU5, HU6, HU7 (URLs prefirmadas S3)
     CertificatesModule, // HU18
     ReviewsModule, // HU20
+    AnalyticsModule, // HU21
   ],
 })
 export class AppModule {}
+

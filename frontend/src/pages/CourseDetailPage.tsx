@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { getCourseProgress } from '../api/progress';
+import { CourseReviewSection } from '../components/CourseReviewSection';
 
 interface Topic {
   id: string;
@@ -28,12 +30,45 @@ export default function CourseDetailPage() {
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [enrolling, setEnrolling] = useState(false);
+  const [canReview, setCanReview] = useState(false);
+  const [reviewReason, setReviewReason] = useState('');
 
   useEffect(() => {
-    api.get<CourseDetail>(`/courses/${id}`).then(({ data }) => {
-      setCourse(data);
-    });
-  }, [id]);
+    let active = true;
+
+    async function loadCourse() {
+      try {
+        const { data } = await api.get<CourseDetail>(`/courses/${id}`);
+        if (!active) return;
+        setCourse(data);
+
+        if (user?.role === 'STUDENT' && data.isEnrolled) {
+          const progress = await getCourseProgress(data.id);
+          if (!active) return;
+          const eligible = progress.percentage >= 50;
+          setCanReview(eligible);
+          setReviewReason(
+            eligible
+              ? ''
+              : `Necesitás tener al menos 50% de avance o finalizar el curso. Actualmente tenés ${progress.percentage}%.`,
+          );
+        } else {
+          setCanReview(false);
+          setReviewReason('Solo los alumnos inscriptos pueden calificar este curso.');
+        }
+      } catch {
+        if (active) {
+          setError('No se pudo cargar el curso.');
+          setReviewReason('No se pudo verificar tu avance. Volvé a intentarlo más tarde.');
+        }
+      }
+    }
+
+    loadCourse();
+    return () => {
+      active = false;
+    };
+  }, [id, user?.role]);
 
   async function handleEnroll() {
     setEnrolling(true);
@@ -97,6 +132,13 @@ export default function CourseDetailPage() {
             {enrolling ? 'Inscribiendo...' : 'Inscribirme'}
           </button>
         ))}
+
+      <CourseReviewSection
+        courseId={course.id}
+        isEnrolled={user?.role === 'STUDENT' && course.isEnrolled}
+        canReview={canReview}
+        reviewReason={reviewReason}
+      />
     </div>
   );
 }

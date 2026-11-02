@@ -6,19 +6,21 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CatalogQueryDto } from './dto/catalog-query.dto';
 import { UploadsService } from '../uploads/uploads.service';
+import { ReviewsService } from '../reviews/reviews.service';
 
 @Injectable()
 export class CoursesService {
   constructor(
     private prisma: PrismaService,
     private uploadsService: UploadsService,
+    private reviewsService: ReviewsService,
   ) {}
 
   // HU1: catálogo con filtro combinable por área y/o tecnología.
   // El catálogo respeta el aislamiento multi-tenant: cada usuario ve solo
   // los cursos de su institución (el ADMIN, con alcance global, ve todos).
   async catalog(user: AuthenticatedUser, query: CatalogQueryDto) {
-    return this.prisma.course.findMany({
+    const courses = await this.prisma.course.findMany({
       where: {
         isPublished: true,
         ...(user.role !== Role.ADMIN ? { institutionId: user.institutionId! } : {}),
@@ -29,6 +31,12 @@ export class CoursesService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    const statistics = await this.reviewsService.getStatisticsByCourses(courses.map(({ id }) => id));
+    return courses.map((course) => ({
+      ...course,
+      ...statistics.get(course.id),
+    }));
   }
 
   // Cursos propios del Profesor, incluyendo borradores (no solo los publicados).

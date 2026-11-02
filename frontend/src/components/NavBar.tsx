@@ -19,7 +19,12 @@ export default function NavBar() {
             <Link to="/mis-cursos">Mis cursos</Link>
           </>
         )}
-        {user.role === 'PROFESSOR' && <Link to="/profesor/cursos">Mis cursos</Link>}
+        {user.role === 'PROFESSOR' && (
+          <>
+            <Link to="/profesor/cursos">Mis cursos</Link>
+            <Link to="/profesor/analiticas">Analíticas</Link>
+          </>
+        )}
         {user.role === 'ADMIN' && (
           <>
             <Link to="/admin/instituciones">Instituciones</Link>

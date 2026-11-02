@@ -8,6 +8,8 @@ interface Course {
   description: string;
   category: string;
   technology?: string | null;
+  ratingAverage: number | null;
+  ratingCount: number;
 }
 
 export default function CatalogPage() {
@@ -95,6 +97,17 @@ export default function CatalogPage() {
               </div>
               <h2 className="font-semibold text-lg text-slate-800 dark:text-slate-100">{course.name}</h2>
               <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{course.description}</p>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300" aria-label="Calificación del curso">
+                {course.ratingCount === 0 ? (
+                  'Sin calificaciones'
+                ) : (
+                  <>
+                    <span className="text-amber-500" aria-hidden="true">★</span>{' '}
+                    <span>{course.ratingAverage?.toFixed(1)}</span>{' '}
+                    <span>({course.ratingCount} {course.ratingCount === 1 ? 'reseña' : 'reseñas'})</span>
+                  </>
+                )}
+              </p>
             </Link>
           ))}
         </div>

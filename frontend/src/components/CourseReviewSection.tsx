@@ -4,7 +4,6 @@ import { ReviewStatistics } from '../api/reviews';
 
 interface CourseReviewSectionProps {
   courseId: string;
-  studentId?: string;
   isEnrolled: boolean;
   canReview: boolean;
   reviewReason?: string;
@@ -12,7 +11,6 @@ interface CourseReviewSectionProps {
 
 export const CourseReviewSection: React.FC<CourseReviewSectionProps> = ({
   courseId,
-  studentId,
   isEnrolled,
   canReview,
   reviewReason,
@@ -38,15 +36,13 @@ export const CourseReviewSection: React.FC<CourseReviewSectionProps> = ({
       const data = await getReviewsByCourse(courseId);
       setReviews(data);
 
-      // Si el usuario tiene una reseña, cargarla en el formulario
-      const userName = localStorage.getItem('userName') || 'Unknown';
-      const ownReview = data.reviews.find(
-        (r: any) => r.studentName === userName,
-      );
+      const ownReview = data.reviews.find((review) => review.isOwnReview);
       if (ownReview) {
         setRating(ownReview.rating);
         setComment(ownReview.comment || '');
         setIsEditing(true);
+      } else {
+        setIsEditing(false);
       }
     } catch (err) {
       setError('No se pudieron cargar las reseñas.');

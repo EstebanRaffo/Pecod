@@ -222,9 +222,9 @@ describe('ReviewsService', () => {
   describe('HU20 CA6: Listado y promedio de reseñas', () => {
     it('HU20 CA6: Calcula promedio con un decimal', async () => {
       const reviews = [
-        { ...mockReview, rating: 5, student: { id: 's1', name: 'Student 1' } },
-        { ...mockReview, rating: 4, student: { id: 's2', name: 'Student 2' } },
-        { ...mockReview, rating: 3, student: { id: 's3', name: 'Student 3' } },
+        { ...mockReview, studentId: 'student-1', rating: 5, student: { id: 'student-1', name: 'Student 1' } },
+        { ...mockReview, studentId: 'student-2', rating: 4, student: { id: 'student-2', name: 'Student 2' } },
+        { ...mockReview, studentId: 'student-3', rating: 3, student: { id: 'student-3', name: 'Student 3' } },
       ];
 
       mockPrisma.course.findUnique.mockResolvedValueOnce(mockCourse);
@@ -236,6 +236,7 @@ describe('ReviewsService', () => {
       expect(result.ratingAverage).toBe(4.0);
       expect(result.ratingCount).toBe(3);
       expect(result.reviews).toHaveLength(3);
+      expect(result.reviews.map((review) => review.isOwnReview)).toEqual([true, false, false]);
     });
 
     it('HU20 CA6: Sin reseñas muestra null', async () => {

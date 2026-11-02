@@ -158,6 +158,7 @@ export class ReviewsService {
       rating: review.rating,
       comment: review.comment,
       studentName: review.student.name,
+      isOwnReview: review.studentId === user.userId,
       createdAt: review.createdAt,
       updatedAt: review.updatedAt,
     }));

@@ -7,6 +7,9 @@ import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 const mockUploadsService = {
   generatePresignedGetUrl: jest.fn((key: string) => Promise.resolve(`https://signed/${key}`)),
 };
+const mockReviewsService = {
+  getStatisticsByCourses: jest.fn(),
+};
 
 describe('CoursesService', () => {
   let service: CoursesService;
@@ -34,7 +37,8 @@ describe('CoursesService', () => {
   beforeEach(() => {
     prisma = createMockPrismaService();
     mockUploadsService.generatePresignedGetUrl.mockClear();
-    service = new CoursesService(prisma as any, mockUploadsService as any);
+    mockReviewsService.getStatisticsByCourses.mockResolvedValue(new Map());
+    service = new CoursesService(prisma as any, mockUploadsService as any, mockReviewsService as any);
   });
 
   describe('catalog (HU1)', () => {
@@ -67,6 +71,18 @@ describe('CoursesService', () => {
       const callArg = prisma.course.findMany.mock.calls[0][0];
       expect(callArg.where.category).toEqual({ equals: 'Frontend', mode: 'insensitive' });
       expect(callArg.where.technology).toEqual({ contains: 'React', mode: 'insensitive' });
+    });
+
+    it('CA HU20: agrega promedio y cantidad de reseñas a cada curso', async () => {
+      prisma.course.findMany.mockResolvedValue([{ id: 'course-1', name: 'Testing' }] as any);
+      mockReviewsService.getStatisticsByCourses.mockResolvedValue(
+        new Map([['course-1', { ratingAverage: 4.5, ratingCount: 2 }]]),
+      );
+
+      const result = await service.catalog(student, {});
+
+      expect(mockReviewsService.getStatisticsByCourses).toHaveBeenCalledWith(['course-1']);
+      expect(result[0]).toMatchObject({ ratingAverage: 4.5, ratingCount: 2 });
     });
   });
 

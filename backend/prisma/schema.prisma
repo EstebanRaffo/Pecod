@@ -50,6 +50,7 @@ model User {
   evaluationAttempts EvaluationAttempt[]
   notifications      Notification[]
   certificates       Certificate[]
+  courseReviews      CourseReview[]
 
   @@index([institutionId])
   @@map("users")
@@ -77,6 +78,7 @@ model Course {
   evaluations Evaluation[]
   notifications Notification[]
   certificates  Certificate[]
+  reviews     CourseReview[]
 
   @@index([institutionId, isPublished])
   @@index([category])
@@ -248,3 +250,22 @@ model Certificate {
   @@index([courseId])
   @@map("certificates")
 }
+
+// HU20: Reseñas de cursos
+model CourseReview {
+  id        String   @id @default(uuid())
+  courseId  String
+  course    Course   @relation("reviews", fields: [courseId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5 estrellas
+  comment   String?  // comentario opcional
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, studentId])
+  @@index([courseId])
+  @@index([studentId])
+  @@map("course_reviews")
+}
+

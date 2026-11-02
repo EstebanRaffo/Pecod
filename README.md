@@ -1,6 +1,6 @@
 # PECOD - V3
 
-Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-19 del TP Integrador de Testing de Aplicaciones.
+Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-21 del TP Integrador de Testing de Aplicaciones.
 
 ## Stack (decisiones fijadas para V1)
 
@@ -17,7 +17,7 @@ Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las fu
 pecod-v1/
 ├── backend/          # API NestJS
 │   ├── prisma/
-│   │   ├── schema.prisma   # Modelo de datos completo (12 HU)
+│   │   ├── schema.prisma   # Modelo de datos completo (21 HU)
 │   │   └── seed.ts         # Crea el Administrador de Sistema inicial
 │   └── src/
 │       ├── auth/           # HU10
@@ -27,7 +27,10 @@ pecod-v1/
 │       ├── topics/         # HU5, HU6, HU7
 │       ├── enrollments/    # HU2, HU3
 │       ├── evaluations/    # HU11, HU12
-│       └── uploads/        # URLs prefirmadas S3 (HU5/HU6/HU7)
+│       ├── uploads/        # URLs prefirmadas S3 (HU5/HU6/HU7)
+│       ├── reviews/        # HU20
+│       ├── certificates/   # HU18
+│       └── analytics/      # HU21
 └── frontend/         # SPA React
     └── src/
         ├── pages/          # Una página por HU
@@ -197,7 +200,26 @@ Specs incluidos: `auth.cy.ts` (HU10), `catalog-and-enrollment.cy.ts` (HU1/HU2/HU
 
 HU16: `npm test -- --runInBand enrollments.service.spec.ts` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/progress.cy.ts` desde `frontend`. Los helpers compartidos y el spec de progreso usan `cy.env`, compatible con Cypress 16; los specs anteriores todavía usan la API retirada `Cypress.env`.
 
-> Nota: la colección REST usa Cypress como decisión de este esqueleto; Playwright sigue siendo una alternativa válida (ver "Herramientas" del TP) si el equipo lo prefiere — la estructura de specs no cambiaría demasiado.
+### Panel de analíticas del Profesor (HU21)
+
+El Profesor accede desde el menú a un panel que muestra indicadores agregados de todos sus cursos (publicados, despublicados y borradores):
+- Cantidad de Alumnos inscriptos.
+- Porcentaje de avance promedio (promedio de los porcentajes individuales, redondeado).
+- Calificación promedio (1 decimal, o "Sin calificaciones" si no hay reseñas).
+- Cantidad de reseñas.
+
+Si no tiene cursos, muestra "Sin cursos para analizar" con enlace a crear un curso. El panel calcula los indicadores al abrir y se actualiza automáticamente (no hay caché). Solo datos agregados son expuestos; nunca información individual de Alumnos.
+
+Endpoint autenticado, exclusivo de `PROFESSOR` (base `/api`):
+- `GET /professor/analytics`: retorna array con un objeto por curso propio del Profesor autenticado, incluyendo courseId, title, status, enrolledCount, averageProgress, ratingAverage (null si no hay reseñas), ratingCount.
+
+Rutas del Frontend:
+- `GET /profesor/analiticas`: página del panel (protegida por rol `PROFESSOR`).
+- Enlace en el NavBar del Profesor: "Analíticas".
+
+Pruebas: `npm test -- --runInBand analytics.service.spec.ts` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/hu21-analytics.cy.ts` desde `frontend`. Los tests verifican múltiples porcentajes (redondeo correcto), cursos sin inscriptos/sin temas/sin reseñas, cursos despublicados con indicadores, filtro por Profesor e institución, y denegación de acceso a otros roles.
+
+> Nota: la versión 3 incluye las historias HU18 (Certificados), HU20 (Reseñas y calificaciones) y HU21 (Analíticas del Profesor), extendiendo las 18 HU de las versiones 1 y 2.
 
 ### API — colección de Postman
 

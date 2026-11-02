@@ -16,7 +16,7 @@ Se implementó completamente la Historia de Usuario HU-20 (Reseñas y Calificaci
 - ✅ Frontend: Cliente API + Componente React CourseReviewSection
 - ✅ Tests: 41 nuevos tests (24 reviews + 17 course-completion), todos pasando
 - ✅ Build: Sin errores de compilación
-- 🟡 Integración en UI: Pendiente (componente React listo para importar)
+- ✅ Integración en UI: catálogo y detalle de curso conectados
 
 ---
 
@@ -113,12 +113,12 @@ cd backend && npx prisma migrate deploy
 | # | CA | Descripción | Implementación | Testing | Integración | Estado |
 |---|----|-----------|----|---------|--------|--------|
 | 1 | CA1 | Elegibilidad (50% o finalizado) | ✅ | ✅ | ✅ | ✅ DONE |
-| 2 | CA2 | Deshabilitado con motivo | ✅ | ✅ | 🟡 | ✅ READY |
+| 2 | CA2 | Deshabilitado con motivo | ✅ | ✅ | ✅ | ✅ DONE |
 | 3 | CA3 | Rating 1-5, comentario máx 1000 | ✅ | ✅ | ✅ | ✅ DONE |
-| 4 | CA4 | Una única reseña, editar/eliminar | ✅ | ✅ | 🟡 | ✅ READY |
+| 4 | CA4 | Una única reseña, editar/eliminar | ✅ | ✅ | ✅ | ✅ DONE |
 | 5 | CA5 | Control de roles (Profesor/Admin) | ✅ | ✅ | ✅ | ✅ DONE |
-| 6 | CA6 | Promedio (1 decimal), cantidad, listado | ✅ | ✅ | 🟡 | ✅ READY |
-| 7 | CA7 | Catálogo muestra promedio/cantidad | ✅ | 🟡 | 🟡 | 🔶 PENDING |
+| 6 | CA6 | Promedio (1 decimal), cantidad, listado | ✅ | ✅ | ✅ | ✅ DONE |
+| 7 | CA7 | Catálogo muestra promedio/cantidad | ✅ | 🟡 | ✅ | ✅ DONE |
 | 8 | CA8 | Curso despublicado mantiene acceso | ✅ | ✅ | ✅ | ✅ DONE |
 | 9 | CA9 | Aislamiento por institución | ✅ | ✅ | ✅ | ✅ DONE |
 | 10 | CA10 | V3: Profesor no edita/elimina | ✅ | ✅ | ✅ | ✅ DONE |
@@ -188,40 +188,13 @@ GET    /courses/{courseId}/reviews
 
 ---
 
-## 📋 Próximos Pasos (Para Integración)
+## 📋 Estado de Integración y Verificación
 
-### 1. Integración en CatalogPage.tsx (⏱️ ~15 min)
-```typescript
-import { ReviewsService } from '../services/reviews';
-// En componente:
-const stats = await ReviewsService.getStatisticsByCourses(courseIds);
-// Mostrar stats.ratingAverage, stats.ratingCount en cada card
-```
-
-### 2. Integración en CourseDetailPage.tsx (⏱️ ~10 min)
-```typescript
-import { CourseReviewSection } from '../components/CourseReviewSection';
-// Agregar antes de footer:
-<CourseReviewSection {...props} />
-```
-
-### 3. Actualizar CoursesService (⏱️ ~20 min)
-```typescript
-// En catalog() y findDetail():
-const stats = await reviewsService.getStatisticsByCourses([...]);
-// Incluir en respuesta
-```
-
-### 4. Documentación (⏱️ ~10 min)
-- Actualizar README.md
-- Agregar colección Postman
-- Documentar API endpoints
-
-### 5. Tests E2E (⏱️ ~30 min - si se desea ejecutar)
-```bash
-cd frontend && npm run cypress:open
-# Ejecutar hu20-reviews.cy.ts
-```
+- Catálogo integrado con estadísticas agregadas por curso; los cursos sin reseñas muestran “Sin calificaciones”.
+- Detalle integrado con promedio, listado y controles para alumnos inscriptos; la elegibilidad visible usa el avance y el backend vuelve a validarla al guardar.
+- Verificación realizada: build de frontend y backend, 37 pruebas unitarias focalizadas y smoke test manual en catálogo/detalle.
+- La base local no tenía cursos reseñados, por lo que el estado con promedio positivo y el flujo de escritura no se verificaron visualmente en esta sesión.
+- Sigue pendiente ejecutar/actualizar las pruebas E2E de HU-20 y documentar la colección Postman.
 
 ---
 

@@ -8,6 +8,7 @@ import CourseDetailPage from './pages/CourseDetailPage';
 import MyCoursesPage from './pages/MyCoursesPage';
 import CourseLearningPage from './pages/CourseLearningPage';
 import ProfessorCoursesPage from './pages/ProfessorCoursesPage';
+import ProfessorAnalyticsPage from './pages/ProfessorAnalyticsPage';
 import CourseEditorPage from './pages/CourseEditorPage';
 import AdminInstitutionsPage from './pages/AdminInstitutionsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
@@ -87,6 +88,15 @@ export default function App() {
           element={
             <ProtectedRoute allow={['PROFESSOR']}>
               <CourseEditorPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* HU21: Panel de analíticas */}
+        <Route
+          path="/profesor/analiticas"
+          element={
+            <ProtectedRoute allow={['PROFESSOR']}>
+              <ProfessorAnalyticsPage />
             </ProtectedRoute>
           }
         />
