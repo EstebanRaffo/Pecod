@@ -15,7 +15,7 @@ Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las fu
 ## Estructura
 
 ```
-pecod-v1/
+pecod/
 ├── backend/          # API NestJS
 │   ├── prisma/
 │   │   ├── schema.prisma   # Modelo de datos completo (22 HU)
