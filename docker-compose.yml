@@ -12,6 +12,18 @@ services:
     volumes:
       - pecod_postgres_data:/var/lib/postgresql/data
 
+  # HU22: Mailpit para desarrollo (mock SMTP)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: pecod-mailpit
+    restart: unless-stopped
+    ports:
+      - '1025:1025'  # SMTP
+      - '8025:8025'  # Web UI
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 'true'
+      MP_SMTP_AUTH_ALLOW_INSECURE: 'true'
+
   # Redis queda comentado: en V1 solo haría falta para cache del catálogo,
   # no para sesiones (JWT es stateless). Descomentar si se implementa cache.
   # redis:

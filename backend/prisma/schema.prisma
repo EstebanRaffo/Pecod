@@ -42,6 +42,8 @@ model User {
   // El Administrador de Sistema (HU9) no pertenece a ninguna institución (alcance global, HU10).
   institutionId  String?
   institution    Institution? @relation(fields: [institutionId], references: [id])
+  // HU22: timestamp de último cambio de contraseña; usado para invalidar tokens JWT anteriores
+  passwordChangedAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -51,9 +53,25 @@ model User {
   notifications      Notification[]
   certificates       Certificate[]
   courseReviews      CourseReview[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([institutionId])
   @@map("users")
+}
+
+// HU22: Tokens para restablecimiento de contraseña
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique // hash SHA-256 del token; se envía el token en claro al usuario
+  expiresAt DateTime // 60 minutos de vigencia
+  usedAt    DateTime? // si es no-nulo, el token fue usado
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("password_reset_tokens")
 }
 
 model Course {
@@ -78,7 +96,7 @@ model Course {
   evaluations Evaluation[]
   notifications Notification[]
   certificates  Certificate[]
-  reviews     CourseReview[]
+  reviews     CourseReview[] @relation("courseReviews")
 
   @@index([institutionId, isPublished])
   @@index([category])
@@ -255,7 +273,7 @@ model Certificate {
 model CourseReview {
   id        String   @id @default(uuid())
   courseId  String
-  course    Course   @relation("reviews", fields: [courseId], references: [id], onDelete: Cascade)
+  course    Course   @relation("courseReviews", fields: [courseId], references: [id], onDelete: Cascade)
   studentId String
   student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
   rating    Int      // 1-5 estrellas

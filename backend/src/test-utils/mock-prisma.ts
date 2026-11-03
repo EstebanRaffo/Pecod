@@ -9,6 +9,7 @@ type ModelMock = {
   create: jest.Mock;
   createMany: jest.Mock;
   update: jest.Mock;
+  updateMany: jest.Mock; // HU22
   delete: jest.Mock;
   upsert: jest.Mock;
   deleteMany: jest.Mock;
@@ -23,6 +24,7 @@ function createModelMock(): ModelMock {
     create: jest.fn(),
     createMany: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(), // HU22
     delete: jest.fn(),
     upsert: jest.fn(),
     deleteMany: jest.fn(),
@@ -45,6 +47,7 @@ export function createMockPrismaService() {
     evaluationAttempt: createModelMock(),
     certificate: createModelMock(),
     courseReview: createModelMock(),
+    passwordResetToken: createModelMock(), // HU22
     $transaction: jest.fn(),
   };
   prisma.enrollment.findMany.mockResolvedValue([]);

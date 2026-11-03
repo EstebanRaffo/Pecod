@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { InstitutionsModule } from './institutions/institutions.module';
@@ -30,6 +32,12 @@ import { AnalyticsModule } from './analytics/analytics.module';
     CertificatesModule, // HU18
     ReviewsModule, // HU20
     AnalyticsModule, // HU21
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, // HU22: Rate limiting global
+    },
   ],
 })
 export class AppModule {}

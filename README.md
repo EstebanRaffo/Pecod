@@ -1,12 +1,13 @@
 # PECOD - V3
 
-Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-21 del TP Integrador de Testing de Aplicaciones.
+Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-22 del TP Integrador de Testing de Aplicaciones.
 
 ## Stack (decisiones fijadas para V1)
 
 - **Backend:** Node.js + NestJS + REST
 - **Base de datos:** PostgreSQL (Prisma ORM), multi-tenant vía `institutionId`
 - **Auth:** JWT (login con email/contraseña propios de la plataforma; sin OAuth2 en V1)
+- **Email:** Nodemailer (SMTP configurable, Mailpit para desarrollo)
 - **Frontend:** React + TypeScript + Vite + TailwindCSS
 - **Video:** subida directa a S3 vía URL prefirmada + Mux (transcodificación/streaming)
 - **Testing:** Jest, Cypress/Playwright, Postman, JMeter/k6 (no incluidos en este esqueleto)
@@ -17,10 +18,11 @@ Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las fu
 pecod-v1/
 ├── backend/          # API NestJS
 │   ├── prisma/
-│   │   ├── schema.prisma   # Modelo de datos completo (21 HU)
+│   │   ├── schema.prisma   # Modelo de datos completo (22 HU)
 │   │   └── seed.ts         # Crea el Administrador de Sistema inicial
 │   └── src/
-│       ├── auth/           # HU10
+│       ├── auth/           # HU10, HU22
+│       ├── mail/           # HU22 (envío de emails)
 │       ├── institutions/   # HU9
 │       ├── users/          # HU9
 │       ├── courses/        # HU1, HU4, HU5, HU8
@@ -33,20 +35,22 @@ pecod-v1/
 │       └── analytics/      # HU21
 └── frontend/         # SPA React
     └── src/
-        ├── pages/          # Una página por HU
+        ├── pages/          # Una página por HU (+ ForgotPasswordPage, ResetPasswordPage para HU22)
         ├── context/        # AuthContext (JWT)
         └── routes/         # ProtectedRoute (control de acceso por rol)
 ```
 
 ## Puesta en marcha
 
-### 1. Base de datos
+### 1. Base de datos y servicios
 
 ```bash
 docker compose up -d
 ```
 
-Esto levanta PostgreSQL en `localhost:5432` (usuario/clave/DB: `pecod`).
+Esto levanta:
+- **PostgreSQL** en `localhost:5432` (usuario/clave/DB: `pecod`)
+- **Mailpit** en `localhost:1025` (SMTP) y `localhost:8025` (Web UI para desarrollo)
 
 ### 2. Backend
 
