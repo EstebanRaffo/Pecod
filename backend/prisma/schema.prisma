@@ -71,6 +71,8 @@ model User {
   courseReviews      CourseReview[]
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[] // HU23
+  forumThreads       ForumThread[]      @relation("ForumThreads") // HU25
+  forumPosts         ForumPost[]        @relation("ForumPosts") // HU25
 
   @@index([institutionId])
   @@map("users")
@@ -129,6 +131,7 @@ model Course {
   notifications Notification[]
   certificates  Certificate[]
   reviews     CourseReview[] @relation("courseReviews")
+  forumThreads ForumThread[]  // HU25
 
   @@index([institutionId, isPublished])
   @@index([category])
@@ -151,6 +154,7 @@ model Topic {
   evaluations  Evaluation[]
   progress     TopicProgress[]
   notifications Notification[]
+  forumThreads ForumThread[]  // HU25
 
   @@index([courseId])
   @@map("topics")
@@ -321,3 +325,35 @@ model CourseReview {
   @@map("course_reviews")
 }
 
+// HU25: Foro de consultas por curso
+model ForumThread {
+  id        String   @id @default(uuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  topicId   String?
+  topic     Topic?   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  authorId  String
+  author    User     @relation("ForumThreads", fields: [authorId], references: [id])
+  title     String   @db.VarChar(120)
+  body      String   @db.VarChar(2000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     ForumPost[]
+
+  @@index([courseId, createdAt])
+  @@index([topicId])
+  @@map("forum_threads")
+}
+
+model ForumPost {
+  id        String   @id @default(uuid())
+  threadId  String
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("ForumPosts", fields: [authorId], references: [id])
+  body      String   @db.VarChar(2000)
+  createdAt DateTime @default(now())
+
+  @@index([threadId, createdAt])
+  @@map("forum_posts")
+}

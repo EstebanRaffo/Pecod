@@ -1,6 +1,6 @@
 # PECOD - V3
 
-Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-24 del TP Integrador de Testing de Aplicaciones.
+Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-25 del TP Integrador de Testing de Aplicaciones.
 
 ## Stack (decisiones fijadas para V1)
 
@@ -18,7 +18,7 @@ Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las fu
 pecod/
 ├── backend/          # API NestJS
 │   ├── prisma/
-│   │   ├── schema.prisma   # Modelo de datos completo (23 HU)
+│   │   ├── schema.prisma   # Modelo de datos completo (25 HU)
 │   │   └── seed.ts         # Crea el Administrador de Sistema inicial
 │   └── src/
 │       ├── auth/           # HU10, HU22, HU23 (auto-registro)
@@ -34,10 +34,12 @@ pecod/
 │       ├── certificates/   # HU18
 │       ├── analytics/      # HU21
 │       ├── notifications/  # HU17, HU24 (notificaciones de contenido y recomendaciones)
-│       └── recommendations/ # HU24 (algoritmo de recomendación de cursos)
+│       ├── recommendations/ # HU24 (algoritmo de recomendación de cursos)
+│       └── forum/          # HU25 (foro de consultas por curso)
 └── frontend/         # SPA React
     └── src/
-        ├── pages/          # Una página por HU (+ ForgotPasswordPage, ResetPasswordPage para HU22, RegisterPage y VerifyEmailPage para HU23)
+        ├── pages/          # Una página por HU (+ ForgotPasswordPage, ResetPasswordPage para HU22, RegisterPage y VerifyEmailPage para HU23, ForumPage para HU25)
+        ├── components/     # Componentes reutilizables (ConfirmDialog para HU25)
         ├── context/        # AuthContext (JWT)
         └── routes/         # ProtectedRoute (control de acceso por rol)
 ```

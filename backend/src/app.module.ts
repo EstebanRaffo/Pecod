@@ -16,6 +16,7 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { RecommendationsModule } from './recommendations/recommendations.module'; // HU24
+import { ForumModule } from './forum/forum.module'; // HU25
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
     ReviewsModule, // HU20
     AnalyticsModule, // HU21
     RecommendationsModule, // HU24
+    ForumModule, // HU25
   ],
   providers: [
     {
