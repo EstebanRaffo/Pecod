@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bell, Check, LoaderCircle, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { ContentNotification, getNotifications, markNotificationRead } from '../api/notifications';
+import { Link, useNavigate } from 'react-router-dom';
+import { Notification, getNotifications, markNotificationRead } from '../api/notifications';
 
 export default function NotificationBell() {
-  const [notifications, setNotifications] = useState<ContentNotification[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -12,6 +12,7 @@ export default function NotificationBell() {
   const [reloadKey, setReloadKey] = useState(0);
   const container = useRef<HTMLDivElement>(null);
   const bell = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate();
   const unreadCount = notifications.filter((notification) => !notification.readAt).length;
 
   useEffect(() => {
@@ -79,6 +80,13 @@ export default function NotificationBell() {
     }
   }
 
+  // HU24: Handle clicking on a recommendation notification
+  function handleRecommendationClick(notification: Extract<Notification, { event: 'COURSE_RECOMMENDED' }>) {
+    markRead(notification.id);
+    navigate(`/mis-cursos/${notification.courseId}`);
+    setOpen(false);
+  }
+
   return (
     <div ref={container} className="sm:relative shrink-0">
       <button
@@ -116,13 +124,34 @@ export default function NotificationBell() {
                   <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1 space-y-1 break-words">
                       <p className="font-semibold text-slate-900 dark:text-slate-100">{notification.courseName}</p>
-                      <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{notification.event === 'NEW_CONTENT' ? 'Contenido nuevo' : 'Contenido actualizado'}</p>
-                      <Link to={`/mis-cursos/${notification.courseId}${notification.topicId ? `#tema-${notification.topicId}` : ''}`} onClick={() => setOpen(false)} className="block text-sm text-blue-700 dark:text-blue-400 underline">{notification.topicTitle}</Link>
+                      
+                      {/* HU24: Course recommendation notification */}
+                      {notification.event === 'COURSE_RECOMMENDED' ? (
+                        <>
+                          <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Curso recomendado</p>
+                          {notification.category && <p className="text-xs text-slate-500 dark:text-slate-400">Área: {notification.category}</p>}
+                          {notification.technology && <p className="text-xs text-slate-500 dark:text-slate-400">Tecnología: {notification.technology}</p>}
+                          <button
+                            type="button"
+                            onClick={() => handleRecommendationClick(notification)}
+                            className="block text-sm text-blue-700 dark:text-blue-400 underline hover:no-underline"
+                          >
+                            Ver curso recomendado
+                          </button>
+                        </>
+                      ) : (
+                        /* Content notification (HU17) */
+                        <>
+                          <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{notification.event === 'NEW_CONTENT' ? 'Contenido nuevo' : 'Contenido actualizado'}</p>
+                          <Link to={`/mis-cursos/${notification.courseId}${notification.topicId ? `#tema-${notification.topicId}` : ''}`} onClick={() => setOpen(false)} className="block text-sm text-blue-700 dark:text-blue-400 underline">{notification.topicTitle}</Link>
+                        </>
+                      )}
+                      
                       <time dateTime={notification.createdAt} className="block text-xs text-slate-500 dark:text-slate-400">{new Date(notification.createdAt).toLocaleString('es-AR')}</time>
                       <p className="text-xs text-slate-500 dark:text-slate-400">{notification.readAt ? 'Leida' : 'Sin leer'}</p>
                     </div>
                     {!notification.readAt && (
-                      <button type="button" title="Marcar como leida" aria-label={`Marcar como leida: ${notification.topicTitle}`} disabled={readingId !== null} onClick={() => markRead(notification.id)} className="h-8 w-8 shrink-0 flex items-center justify-center rounded text-slate-600 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-800 disabled:opacity-50">
+                      <button type="button" title="Marcar como leida" aria-label={`Marcar como leida: ${notification.courseName}`} disabled={readingId !== null} onClick={() => markRead(notification.id)} className="h-8 w-8 shrink-0 flex items-center justify-center rounded text-slate-600 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-800 disabled:opacity-50">
                         {readingId === notification.id ? <LoaderCircle size={18} className="animate-spin" aria-hidden="true" /> : <Check size={18} aria-hidden="true" />}
                       </button>
                     )}

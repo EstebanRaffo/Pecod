@@ -1,15 +1,18 @@
 import { NotFoundException } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { RecommendationsService } from '../recommendations/recommendations.service';
 import { createMockPrismaService, MockPrismaService } from '../test-utils/mock-prisma';
 
 describe('NotificationsService (HU17)', () => {
   let prisma: MockPrismaService;
   let service: NotificationsService;
+  let recommendationsService: RecommendationsService;
   const visible = { studentId: 'student-1', course: { enrollments: { some: { studentId: 'student-1' } } } };
 
   beforeEach(() => {
     prisma = createMockPrismaService();
-    service = new NotificationsService(prisma as any);
+    const mockRecommendations = { generateForAllStudents: jest.fn() } as unknown as RecommendationsService;
+    service = new NotificationsService(prisma as any, mockRecommendations);
   });
 
   it('lista solo avisos propios de cursos con inscripcion vigente, mas recientes primero', async () => {

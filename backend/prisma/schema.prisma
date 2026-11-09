@@ -159,6 +159,7 @@ model Topic {
 enum ContentEvent {
   NEW_CONTENT
   UPDATED_CONTENT
+  COURSE_RECOMMENDED // HU24: recomendación de cursos
 }
 
 model Notification {
@@ -170,7 +171,7 @@ model Notification {
   topicId    String?
   topic      Topic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
   courseName String
-  topicTitle String
+  topicTitle String? // HU24: nullable para recomendaciones (topicTitle es null)
   event      ContentEvent
   createdAt  DateTime @default(now())
   readAt     DateTime?

@@ -1,6 +1,6 @@
 # PECOD - V3
 
-Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-23 del TP Integrador de Testing de Aplicaciones.
+Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-24 del TP Integrador de Testing de Aplicaciones.
 
 ## Stack (decisiones fijadas para V1)
 
@@ -32,7 +32,9 @@ pecod/
 │       ├── uploads/        # URLs prefirmadas S3 (HU5/HU6/HU7)
 │       ├── reviews/        # HU20
 │       ├── certificates/   # HU18
-│       └── analytics/      # HU21
+│       ├── analytics/      # HU21
+│       ├── notifications/  # HU17, HU24 (notificaciones de contenido y recomendaciones)
+│       └── recommendations/ # HU24 (algoritmo de recomendación de cursos)
 └── frontend/         # SPA React
     └── src/
         ├── pages/          # Una página por HU (+ ForgotPasswordPage, ResetPasswordPage para HU22, RegisterPage y VerifyEmailPage para HU23)
@@ -132,6 +134,23 @@ npm run start:dev
 ```
 
 Pruebas: `npm test -- --runInBand topics.service.spec notifications.service.spec` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/notifications.cy.ts` desde `frontend`. El spec comprueba recepcion en una sesion abierta, orden, lectura persistente, navegacion al tema, vista movil, exclusiones y aislamiento entre alumnos.
+
+### Recomendación de cursos (HU24)
+
+El Alumno inscripto recibe recomendaciones de cursos nuevos basadas en su historial de inscripciones y su avance (HU16). Las recomendaciones se generan mediante una tarea programada que se ejecuta una vez por semana (lunes 09:00 UTC) y se entregan como notificaciones en el mismo icono "campana" y listado de HU17, diferenciadas por el tipo de evento `COURSE_RECOMMENDED`.
+
+El algoritmo calcula el perfil de intereses del Alumno a partir del peso acumulado por categoría y tecnología de los cursos en los que está inscripto. El peso por curso es `1 + avance/100` (p. ej., 80% de avance = 1.8). Luego selecciona los cursos publicados y activos de la institución del Alumno en los que no está inscripto y que no se le han recomendado previamente, y los rankea por puntaje = pesoCategoria + pesoTecnologia (ambos normalizados: lowercase y sin espacios sobrantes). El desempate es por cantidad de inscriptos (descendente) y luego por fecha de creación (más recientes primero). Se generan como máximo 3 recomendaciones por Alumno por ejecución. Un mismo curso no se vuelve a recomendar al mismo Alumno. Si el Alumno no tiene inscripciones o no existen cursos candidatos, no se genera nada y no es un error.
+
+Cada notificación de recomendación informa: nombre del curso, área de conocimiento, tecnología y fecha/hora de generación. Al seleccionar la notificación, el Alumno accede al detalle del curso (HU4); si el curso ya no está publicado, se informa que no está disponible; si el Alumno ya está inscripto (se inscribió después de recibir la recomendación), se navega al contenido del curso.
+
+Las recomendaciones se pueden marcar como leídas y se ordenan junto con las de HU17 de la más reciente a la más antigua. El ícono permanece en rojo mientras haya notificaciones no leídas.
+
+Endpoint autenticado, exclusivo de `ADMIN`, para ejecutar manualmente la generación de recomendaciones en demos y tests (base `/api`):
+- `POST /notifications/recommendations/run`: ejecuta `generateForAllStudents()` y devuelve un resumen con cantidad de estudiantes procesados y notificaciones creadas.
+
+Pruebas: `npm test -- --testPathPattern=recommendations` desde `backend` y `npm run cypress:run -- --spec cypress/e2e/hu24-recommendations.cy.ts` desde `frontend`. El spec cubre ejecución manual, recepción de recomendaciones, lectura persistente, navegación y acceso denegado sin permisos ADMIN.
+
+**Mejoras futuras:** La normalización de categoría y tecnología es frágil porque son strings libres. Una tabla de categorías predefinidas y etiquetado con IDs mejoraría sustancialmente el algoritmo.
 
 ### Certificado de finalización (HU18)
 

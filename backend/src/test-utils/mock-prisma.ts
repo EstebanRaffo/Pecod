@@ -13,6 +13,7 @@ type ModelMock = {
   delete: jest.Mock;
   upsert: jest.Mock;
   deleteMany: jest.Mock;
+  count: jest.Mock; // HU24
 };
 
 function createModelMock(): ModelMock {
@@ -28,6 +29,7 @@ function createModelMock(): ModelMock {
     delete: jest.fn(),
     upsert: jest.fn(),
     deleteMany: jest.fn(),
+    count: jest.fn(), // HU24
   };
 }
 

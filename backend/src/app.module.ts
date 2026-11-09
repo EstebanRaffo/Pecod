@@ -15,6 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { RecommendationsModule } from './recommendations/recommendations.module'; // HU24
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     CertificatesModule, // HU18
     ReviewsModule, // HU20
     AnalyticsModule, // HU21
+    RecommendationsModule, // HU24
   ],
   providers: [
     {
