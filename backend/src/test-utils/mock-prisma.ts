@@ -34,6 +34,7 @@ function createModelMock(): ModelMock {
 export function createMockPrismaService() {
   const prisma = {
     institution: createModelMock(),
+    institutionEmailDomain: createModelMock(), // HU23
     user: createModelMock(),
     course: createModelMock(),
     topic: createModelMock(),
@@ -48,6 +49,7 @@ export function createMockPrismaService() {
     certificate: createModelMock(),
     courseReview: createModelMock(),
     passwordResetToken: createModelMock(), // HU22
+    emailVerificationToken: createModelMock(), // HU23
     $transaction: jest.fn(),
   };
   prisma.enrollment.findMany.mockResolvedValue([]);

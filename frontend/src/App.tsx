@@ -3,6 +3,8 @@ import NavBar from './components/NavBar';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import CatalogPage from './pages/CatalogPage';
@@ -30,6 +32,9 @@ export default function App() {
       <NavBar />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        {/* HU23: Auto-registro */}
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         {/* HU22: Recuperación de contraseña */}
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />

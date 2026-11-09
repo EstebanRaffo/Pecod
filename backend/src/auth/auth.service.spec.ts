@@ -5,26 +5,34 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
 import { MailService } from '../mail/mail.service';
+import { InstitutionsService } from '../institutions/institutions.service';
 import { createMockPrismaService, MockPrismaService } from '../test-utils/mock-prisma';
 
-describe('AuthService (HU10 + HU22)', () => {
+describe('AuthService (HU10 + HU22 + HU23)', () => {
   let service: AuthService;
   let prisma: MockPrismaService;
   let jwtService: JwtService;
   let mailService: MailService;
   let configService: ConfigService;
+  let institutionsService: InstitutionsService;
 
   beforeEach(() => {
     prisma = createMockPrismaService();
     jwtService = { sign: jest.fn().mockReturnValue('fake-jwt-token') } as unknown as JwtService;
-    mailService = { sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined) } as unknown as MailService;
+    mailService = { 
+      sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+      sendEmailVerificationEmail: jest.fn().mockResolvedValue(undefined), // HU23
+    } as unknown as MailService;
     configService = {
       get: jest.fn((key: string, defaultValue?: any) => {
         const config = { FRONTEND_URL: 'http://localhost:3000' };
         return config[key] || defaultValue;
       }),
     } as unknown as ConfigService;
-    service = new AuthService(prisma as any, jwtService, mailService, configService);
+    institutionsService = {
+      findByEmailDomain: jest.fn(),
+    } as unknown as InstitutionsService;
+    service = new AuthService(prisma as any, jwtService, mailService, configService, institutionsService);
   });
 
   // HU10 Tests

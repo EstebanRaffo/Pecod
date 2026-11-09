@@ -1,6 +1,6 @@
 # PECOD - V3
 
-Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-22 del TP Integrador de Testing de Aplicaciones.
+Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las funcionalidades definidas hasta la HU-23 del TP Integrador de Testing de Aplicaciones.
 
 ## Stack (decisiones fijadas para V1)
 
@@ -18,13 +18,13 @@ Plataforma de cursos on-demand multi-institucional. La versión 3 incluye las fu
 pecod/
 ├── backend/          # API NestJS
 │   ├── prisma/
-│   │   ├── schema.prisma   # Modelo de datos completo (22 HU)
+│   │   ├── schema.prisma   # Modelo de datos completo (23 HU)
 │   │   └── seed.ts         # Crea el Administrador de Sistema inicial
 │   └── src/
-│       ├── auth/           # HU10, HU22
-│       ├── mail/           # HU22 (envío de emails)
-│       ├── institutions/   # HU9
-│       ├── users/          # HU9
+│       ├── auth/           # HU10, HU22, HU23 (auto-registro)
+│       ├── mail/           # HU22 (envío de emails), HU23 (verificación)
+│       ├── institutions/   # HU9, HU23 (gestión de dominios)
+│       ├── users/          # HU9, HU23 (usuarios administrativos verificados)
 │       ├── courses/        # HU1, HU4, HU5, HU8
 │       ├── topics/         # HU5, HU6, HU7
 │       ├── enrollments/    # HU2, HU3
@@ -35,7 +35,7 @@ pecod/
 │       └── analytics/      # HU21
 └── frontend/         # SPA React
     └── src/
-        ├── pages/          # Una página por HU (+ ForgotPasswordPage, ResetPasswordPage para HU22)
+        ├── pages/          # Una página por HU (+ ForgotPasswordPage, ResetPasswordPage para HU22, RegisterPage y VerifyEmailPage para HU23)
         ├── context/        # AuthContext (JWT)
         └── routes/         # ProtectedRoute (control de acceso por rol)
 ```

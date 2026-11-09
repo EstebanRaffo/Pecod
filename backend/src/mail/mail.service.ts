@@ -103,4 +103,72 @@ Si no solicitaste restablecer tu contraseña, ignora este correo.
       // No lanzar error: el email es best-effort (HU22: respuesta genérica sin timing leaks)
     }
   }
+
+  // HU23: Enviar email de verificación de email para auto-registro
+  async sendEmailVerificationEmail(
+    email: string,
+    verifyLink: string,
+    userName: string,
+  ): Promise<void> {
+    try {
+      const mailFrom = this.configService.get<string>(
+        'MAIL_FROM',
+        'noreply@pecod.edu',
+      );
+
+      const htmlContent = `
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2>Verificar tu email</h2>
+            <p>Hola ${userName},</p>
+            <p>¡Bienvenido a PECOD! Para completar tu registro, por favor verifica tu email haciendo clic en el enlace de abajo:</p>
+            <p>
+              <a href="${verifyLink}" style="display: inline-block; background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+                Verificar Email
+              </a>
+            </p>
+            <p>Este enlace es válido por 24 horas.</p>
+            <p>Si no creaste una cuenta en PECOD, ignora este correo.</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="font-size: 12px; color: #999;">
+              © 2026 PECOD - Plataforma Educativa Multi-Institucional. Todos los derechos reservados.
+            </p>
+          </body>
+        </html>
+      `;
+
+      const textContent = `
+Verificar tu email
+
+Hola ${userName},
+
+¡Bienvenido a PECOD! Para completar tu registro, por favor verifica tu email accediendo a través de este enlace:
+
+${verifyLink}
+
+Este enlace es válido por 24 horas.
+
+Si no creaste una cuenta en PECOD, ignora este correo.
+
+© 2026 PECOD - Plataforma Educativa Multi-Institucional. Todos los derechos reservados.
+      `.trim();
+
+      await this.transporter.sendMail({
+        from: mailFrom,
+        to: email,
+        subject: 'Verificar tu email - PECOD',
+        text: textContent,
+        html: htmlContent,
+      });
+
+      this.logger.log(`Email verification email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send email verification to ${email}`,
+        error,
+      );
+      // No lanzar error: el email es best-effort (HU23: respuesta genérica sin timing leaks)
+    }
+  }
 }
+

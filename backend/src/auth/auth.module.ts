@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { MailModule } from '../mail/mail.module'; // HU22
+import { InstitutionsModule } from '../institutions/institutions.module'; // HU23
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MailModule } from '../mail/mail.module'; // HU22
       },
     }),
     MailModule, // HU22
+    InstitutionsModule, // HU23
     ThrottlerModule.forRoot([ // HU22
       {
         ttl: 3600000, // 1 hora en milisegundos
