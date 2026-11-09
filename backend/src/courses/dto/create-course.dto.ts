@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 // HU5: "el curso solo se guarda si están completos los campos obligatorios
 // (nombre, descripción, área/categoría, tecnología, temario)"
@@ -24,4 +25,11 @@ export class CreateCourseDto {
   @IsOptional()
   @IsString()
   technology?: string;
+
+  // HU26: Precio opcional en pesos argentinos (null o ausente = gratuito)
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0.01, { message: 'El precio debe ser mayor a 0.' })
+  price?: number;
 }
+

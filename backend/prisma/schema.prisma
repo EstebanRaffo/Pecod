@@ -17,6 +17,11 @@ enum Role {
   STUDENT // Alumno (HU1-HU4, HU12)
 }
 
+enum PaymentStatus {
+  APPROVED
+  REJECTED
+}
+
 model Institution {
   id           String   @id @default(uuid())
   name         String
@@ -73,6 +78,7 @@ model User {
   emailVerificationTokens EmailVerificationToken[] // HU23
   forumThreads       ForumThread[]      @relation("ForumThreads") // HU25
   forumPosts         ForumPost[]        @relation("ForumPosts") // HU25
+  payments           Payment[] // HU26
 
   @@index([institutionId])
   @@map("users")
@@ -121,6 +127,7 @@ model Course {
   technology           String? // tecnología del curso
   academicRequirements String? // requerimientos académicos
   skills               String? // aptitudes que se adquieren
+  price                Decimal? @db.Decimal(10,2) // HU26: precio en ARS; null = gratuito
   isPublished Boolean  @default(false) // HU5 (alta) / HU8 (despublicar-republicar)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -132,6 +139,7 @@ model Course {
   certificates  Certificate[]
   reviews     CourseReview[] @relation("courseReviews")
   forumThreads ForumThread[]  // HU25
+  payments    Payment[] // HU26
 
   @@index([institutionId, isPublished])
   @@index([category])
@@ -356,4 +364,25 @@ model ForumPost {
 
   @@index([threadId, createdAt])
   @@map("forum_posts")
+}
+
+// HU26: Registro de pagos (pago simulado con tarjeta de prueba)
+model Payment {
+  id               String   @id @default(uuid())
+  studentId        String
+  student          User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId         String
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  amount           Decimal  @db.Decimal(10,2) // monto vigente al momento de la operación
+  currency         String   @default("ARS") // HU26: moneda fija ARS
+  status           PaymentStatus
+  rejectionReason  String? // motivo del rechazo si status = REJECTED
+  cardBrand        String? // marca detectada (VISA, MASTERCARD, etc.)
+  cardLast4        String? // últimos 4 dígitos de la tarjeta
+  createdAt        DateTime @default(now())
+
+  @@index([studentId, courseId])
+  @@index([studentId, createdAt])
+  @@index([courseId, createdAt])
+  @@map("payments")
 }

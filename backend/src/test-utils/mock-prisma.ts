@@ -54,6 +54,7 @@ export function createMockPrismaService() {
     emailVerificationToken: createModelMock(), // HU23
     forumThread: createModelMock(), // HU25
     forumPost: createModelMock(), // HU25
+    payment: createModelMock(), // HU26
     $transaction: jest.fn(),
   };
   prisma.enrollment.findMany.mockResolvedValue([]);

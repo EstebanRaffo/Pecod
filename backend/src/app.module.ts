@@ -17,6 +17,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { RecommendationsModule } from './recommendations/recommendations.module'; // HU24
 import { ForumModule } from './forum/forum.module'; // HU25
+import { PaymentsModule } from './payments/payments.module'; // HU26
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ForumModule } from './forum/forum.module'; // HU25
     AnalyticsModule, // HU21
     RecommendationsModule, // HU24
     ForumModule, // HU25
+    PaymentsModule, // HU26
   ],
   providers: [
     {
@@ -45,4 +47,3 @@ import { ForumModule } from './forum/forum.module'; // HU25
   ],
 })
 export class AppModule {}
-

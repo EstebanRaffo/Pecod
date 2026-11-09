@@ -22,6 +22,11 @@ export class EnrollmentsService {
       throw new BadRequestException('Solo podés inscribirte a cursos de tu institución.');
     }
 
+    // HU26: Bloquear inscripción directa a cursos pagos
+    if (course.price && course.price.greaterThan(0)) {
+      throw new ForbiddenException('Este curso es pago. Por favor, realizá el pago para inscribirte.');
+    }
+
     try {
       return await this.prisma.enrollment.create({
         data: { studentId: student.userId, courseId },
