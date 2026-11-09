@@ -197,6 +197,7 @@ model Evaluation {
 
   title     String
   minScore  Int // puntaje mínimo de aprobación, 0-100 (HU11)
+  maxAttempts Int @default(2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

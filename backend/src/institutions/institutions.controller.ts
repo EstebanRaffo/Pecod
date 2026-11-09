@@ -7,12 +7,13 @@ import { InstitutionsService } from './institutions.service';
 import { CreateInstitutionDto } from './dto/create-institution.dto';
 
 // HU9 - Solo el Administrador de Sistema puede dar de alta instituciones en V1.
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+// GET endpoints are public to allow listing institutions for user registration
 @Controller('institutions')
 export class InstitutionsController {
   constructor(private institutionsService: InstitutionsService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Post()
   create(@Body() dto: CreateInstitutionDto) {
     return this.institutionsService.create(dto);
