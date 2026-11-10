@@ -180,6 +180,12 @@ export default function CourseLearningPage() {
         <Link to={`/cursos/${course.id}`} className="text-sm text-slate-600 dark:text-slate-400 underline">
           Volver al detalle del curso
         </Link>
+        <Link
+          to={`/mis-cursos/${course.id}/foro`}
+          className="inline-flex items-center rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          Foro de consultas
+        </Link>
         <div className="flex flex-wrap items-center gap-x-2 text-xs uppercase text-slate-500 dark:text-slate-400">
           <span>{course.category}</span>
           {course.technology && <><span>·</span><span>{course.technology}</span></>}

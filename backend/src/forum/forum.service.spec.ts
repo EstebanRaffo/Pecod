@@ -145,16 +145,26 @@ describe('ForumService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('Falla si el Profesor intenta crear consulta', async () => {
+    it('Profesor propietario puede crear consulta válida', async () => {
       mockPrisma.course.findUnique.mockResolvedValueOnce(mockCourse);
+      mockPrisma.topic.findUnique.mockResolvedValueOnce(mockTopic);
+      mockPrisma.forumThread.create.mockResolvedValueOnce({
+        id: 'thread-prof',
+        title: 'Pregunta del profesor',
+        body: 'Contenido de la pregunta',
+        topicId: 'topic-1',
+        topic: { title: 'Introducción' },
+        author: { id: 'prof-1', name: 'Profesor' },
+        createdAt: new Date(),
+      });
 
-      await expect(
-        service.createThread('course-1', mockProfessor, {
-          topicId: 'topic-1',
-          title: 'Título',
-          body: 'contenido',
-        }),
-      ).rejects.toThrow(ForbiddenException);
+      const result = await service.createThread('course-1', mockProfessor, {
+        topicId: 'topic-1',
+        title: 'Pregunta del profesor',
+        body: 'Contenido de la pregunta',
+      });
+
+      expect(result.author.id).toBe('prof-1');
     });
 
     it('Falla si alumno no está inscripto en el curso', async () => {

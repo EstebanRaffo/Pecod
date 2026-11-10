@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
 import * as forumApi from '../api/forum';
-import { getTopics } from '../api/topics';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 // HU25: Página del foro por curso
@@ -34,8 +34,8 @@ export function ForumPage() {
     async function loadTopics() {
       if (!courseId) return;
       try {
-        const topicList = await getTopics(courseId);
-        setTopics(topicList);
+        const { data } = await api.get<{ topics: Topic[] }>(`/courses/${courseId}`);
+        setTopics(data.topics);
       } catch (err) {
         console.error('Error loading topics:', err);
       }
@@ -127,7 +127,7 @@ export function ForumPage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Foro del curso</h1>
-          {user?.role === 'STUDENT' && (
+          {(user?.role === 'STUDENT' || user?.role === 'PROFESSOR') && (
             <button
               onClick={() => setShowNewThreadForm(!showNewThreadForm)}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -269,14 +269,6 @@ export function ForumPage() {
                       {thread.title}
                     </h3>
                   </button>
-                  {(user?.userId === thread.author || user?.role === 'PROFESSOR') && (
-                    <button
-                      onClick={() => setThreadToDelete(thread.id)}
-                      className="ml-2 px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                    >
-                      Eliminar
-                    </button>
-                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">

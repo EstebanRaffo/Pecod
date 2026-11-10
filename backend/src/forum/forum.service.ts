@@ -95,9 +95,9 @@ export class ForumService {
     user: AuthenticatedUser,
     dto: CreateForumThreadDto,
   ) {
-    // Solo Alumnos inscriptos pueden crear consultas
-    if (user.role !== Role.STUDENT) {
-      throw new ForbiddenException('Solo los Alumnos inscriptos pueden crear consultas.');
+    // Alumnos inscriptos o Profesores propietarios pueden crear consultas
+    if (user.role !== Role.STUDENT && user.role !== Role.PROFESSOR) {
+      throw new ForbiddenException('No tenés permiso para crear consultas.');
     }
 
     // Validar acceso al foro del curso

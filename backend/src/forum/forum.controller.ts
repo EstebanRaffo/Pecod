@@ -45,7 +45,7 @@ export class ForumController {
 
   // HU25 CA1: Crear una consulta
   @Post(':courseId/forum/threads')
-  @Roles(Role.STUDENT)
+  @Roles(Role.STUDENT, Role.PROFESSOR)
   async createThread(
     @Param('courseId') courseId: string,
     @CurrentUser() user: AuthenticatedUser,

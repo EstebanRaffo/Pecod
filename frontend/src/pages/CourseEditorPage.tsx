@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import TopicMediaUploader from '../components/TopicMediaUploader';
 import EvaluationCreator from '../components/EvaluationCreator';
@@ -206,21 +206,29 @@ export default function CourseEditorPage() {
           <p className="text-xs uppercase text-slate-400 dark:text-slate-500 tracking-wide mb-0.5">Detalle del curso</p>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{course.name}</h1>
         </div>
-        {course.isPublished ? (
-          <button
-            onClick={() => setShowUnpublishModal(true)}
-            className="shrink-0 px-4 py-2 rounded text-white bg-amber-600 hover:bg-amber-700"
+        <div className="flex gap-2 shrink-0">
+          <Link
+            to={`/profesor/cursos/${course.id}/foro`}
+            className="px-4 py-2 rounded text-white bg-blue-600 hover:bg-blue-700"
           >
-            Despublicar
-          </button>
-        ) : (
-          <button
-            onClick={handlePublish}
-            className="shrink-0 px-4 py-2 rounded text-white bg-green-600 hover:bg-green-700"
-          >
-            Publicar
-          </button>
-        )}
+            Foro
+          </Link>
+          {course.isPublished ? (
+            <button
+              onClick={() => setShowUnpublishModal(true)}
+              className="px-4 py-2 rounded text-white bg-amber-600 hover:bg-amber-700"
+            >
+              Despublicar
+            </button>
+          ) : (
+            <button
+              onClick={handlePublish}
+              className="px-4 py-2 rounded text-white bg-green-600 hover:bg-green-700"
+            >
+              Publicar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Nombre ──────────────────────────────────────────────────────── */}

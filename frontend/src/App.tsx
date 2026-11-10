@@ -9,6 +9,7 @@ import CatalogPage from './pages/CatalogPage';
 import CourseDetailPage from './pages/CourseDetailPage';
 import MyCoursesPage from './pages/MyCoursesPage';
 import CourseLearningPage from './pages/CourseLearningPage';
+import { ForumPage } from './pages/ForumPage';
 import ProfessorCoursesPage from './pages/ProfessorCoursesPage';
 import ProfessorAnalyticsPage from './pages/ProfessorAnalyticsPage';
 import CourseEditorPage from './pages/CourseEditorPage';
@@ -65,6 +66,23 @@ export default function App() {
           element={
             <ProtectedRoute allow={['STUDENT']}>
               <CourseLearningPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mis-cursos/:courseId/foro"
+          element={
+            <ProtectedRoute allow={['STUDENT']}>
+              <ForumPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* HU25: Foro para profesores */}
+        <Route
+          path="/profesor/cursos/:courseId/foro"
+          element={
+            <ProtectedRoute allow={['PROFESSOR']}>
+              <ForumPage />
             </ProtectedRoute>
           }
         />
