@@ -10,7 +10,6 @@ export class UsersService {
 
   // HU9: "los usuarios son dados de alta exclusivamente por el Administrador de Sistema
   // (no existe auto-registro en V1)... y reciben el medio de acceso inicial definido"
-  // HU23: Usuarios creados administrativamente se crean ya verificados
   async create(dto: CreateUserDto) {
     const institution = await this.prisma.institution.findUnique({
       where: { id: dto.institutionId },
@@ -32,7 +31,6 @@ export class UsersService {
         role: dto.role,
         institutionId: dto.institutionId,
         passwordHash,
-        emailVerifiedAt: new Date(), // HU23: Usuarios administrativos se crean verificados
       },
     });
 

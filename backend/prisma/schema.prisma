@@ -32,24 +32,10 @@ model Institution {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  users              User[]
-  courses            Course[]
-  emailDomains       InstitutionEmailDomain[] // HU23: dominios de email para auto-registro
+  users   User[]
+  courses Course[]
 
   @@map("institutions")
-}
-
-// HU23: Dominios de email permitidos para auto-registro por institución
-model InstitutionEmailDomain {
-  id            String   @id @default(uuid())
-  institutionId String
-  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
-  domain        String       // dominio normalizado (lowercase, sin @)
-  createdAt     DateTime @default(now())
-
-  @@unique([institutionId, domain])
-  @@index([domain])
-  @@map("institution_email_domains")
 }
 
 model User {
@@ -63,8 +49,6 @@ model User {
   institution    Institution? @relation(fields: [institutionId], references: [id])
   // HU22: timestamp de último cambio de contraseña; usado para invalidar tokens JWT anteriores
   passwordChangedAt DateTime?
-  // HU23: timestamp de verificación de email; null si no verificado
-  emailVerifiedAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -75,7 +59,6 @@ model User {
   certificates       Certificate[]
   courseReviews      CourseReview[]
   passwordResetTokens PasswordResetToken[]
-  emailVerificationTokens EmailVerificationToken[] // HU23
   forumThreads       ForumThread[]      @relation("ForumThreads") // HU25
   forumPosts         ForumPost[]        @relation("ForumPosts") // HU25
   payments           Payment[] // HU26
@@ -97,21 +80,6 @@ model PasswordResetToken {
   @@index([userId])
   @@index([tokenHash])
   @@map("password_reset_tokens")
-}
-
-// HU23: Tokens para verificación de email en auto-registro
-model EmailVerificationToken {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String   @unique // hash SHA-256 del token; se envía el token en claro al usuario
-  expiresAt DateTime // 24 horas de vigencia
-  usedAt    DateTime? // si es no-nulo, el token fue usado
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([tokenHash])
-  @@map("email_verification_tokens")
 }
 
 model Course {

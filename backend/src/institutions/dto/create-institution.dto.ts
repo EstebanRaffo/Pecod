@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, Matches, IsArray, IsOptional, ArrayMinSize } from 'class-validator';
+import { IsEmail, IsNotEmpty, Matches } from 'class-validator';
 
 // HU9: "nombre, dominio/subdominio único, dirección, teléfono y email de contacto"
 export class CreateInstitutionDto {
@@ -19,11 +19,4 @@ export class CreateInstitutionDto {
 
   @IsEmail({}, { message: 'El email de contacto no tiene un formato válido.' })
   contactEmail: string;
-
-  // HU23: Dominios de email permitidos para auto-registro (opcional al crear)
-  @IsOptional()
-  @IsArray({ message: 'Los dominios de email deben ser un array.' })
-  @ArrayMinSize(0)
-  emailDomains?: string[];
 }
-
