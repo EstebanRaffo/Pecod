@@ -1,0 +1,57 @@
+CREDENCIALES DE ACCESO ACTUALIZADAS
+====================================
+
+Las credenciales han sido actualizadas en la base de datos con contraseñas hasheadas correctamente
+usando bcrypt. Todas los usuarios tienen emails verificados.
+
+════════════════════════════════════════════════════════════════════════════════
+
+ADMINISTRADOR DE SISTEMA:
+  Email:    admin@pecod.com
+  Password: Admin123!
+  Rol:      ADMIN
+  Institución: Ninguna (alcance global)
+
+════════════════════════════════════════════════════════════════════════════════
+
+USUARIO ALUMNO:
+  Email:    efernandezraffo@uade.edu.ar
+  Password: Alumno123!
+  Rol:      STUDENT
+  Institución: Universidad Argentina de la Empresa (UADE)
+  Nombre:    Esteban Fernández Raffo
+
+════════════════════════════════════════════════════════════════════════════════
+
+USUARIO PROFESOR:
+  Email:    francolmartinez@uade.edu.ar
+  Password: Profesor123!
+  Rol:      PROFESSOR
+  Institución: Universidad Argentina de la Empresa (UADE)
+  Nombre:    Franco L. Martínez
+
+════════════════════════════════════════════════════════════════════════════════
+
+CAMBIOS REALIZADOS:
+
+1. Se actualizó el script de seed (backend/prisma/seed.ts) para:
+   - Crear la institución UADE si no existe
+   - Agregar usuarios alumno y profesor con roles correctos
+   - Hashear las contraseñas con bcrypt (10 rounds)
+   - Marcar todos los emails como verificados (emailVerifiedAt)
+   - Evitar duplicados si se ejecuta múltiples veces
+
+2. Todas las contraseñas son ahora válidas y pueden ser usadas para login inmediatamente
+
+3. Los usuarios pertenecen a la institución UADE, lo que permite testing completo
+   de funcionalidades multi-tenant
+
+════════════════════════════════════════════════════════════════════════════════
+
+CÓMO PROBAR:
+
+1. Asegurate que el backend esté ejecutándose
+2. En la aplicación frontend, usa cualquiera de estas credenciales para login
+3. El sistema te redireccionará según el rol del usuario
+
+════════════════════════════════════════════════════════════════════════════════

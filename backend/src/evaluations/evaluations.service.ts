@@ -37,6 +37,30 @@ export class EvaluationsService {
       select: { id: true, title: true, minScore: true, topicId: true, createdAt: true },
       orderBy: { createdAt: 'asc' },
     });
+
+    // Si es estudiante, incluir estado de aprobación
+    if (user.role === Role.STUDENT) {
+      const evaluationsWithStatus = await Promise.all(
+        evaluations.map(async (evaluation) => {
+          const attempt = await this.prisma.evaluationAttempt.findFirst({
+            where: {
+              evaluationId: evaluation.id,
+              studentId: user.userId,
+              passed: true,
+            },
+            select: { passed: true, score: true, attemptNumber: true },
+          });
+          return {
+            ...evaluation,
+            passed: attempt?.passed ?? false,
+            score: attempt?.score ?? null,
+            attemptNumber: attempt?.attemptNumber ?? null,
+          };
+        }),
+      );
+      return evaluationsWithStatus;
+    }
+
     return evaluations;
   }
 
@@ -147,6 +171,7 @@ export class EvaluationsService {
       id: version.id,
       title: version.title,
       minScore: version.minScore,
+      courseId: evaluation.courseId,
       attemptsUsed: attempts.length,
       maxAttempts: evaluation.maxAttempts, // HU19: devolver maxAttempts vigente
       questions: version.questions.map((q) => ({

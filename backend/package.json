@@ -13,7 +13,10 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
     "test": "jest",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:backup": "ts-node scripts/backup-db.ts",
+    "restore:v2-data": "ts-node scripts/restore-v2-data.ts",
+    "restore:v2-data:dry-run": "ts-node scripts/restore-v2-data.ts --dry-run"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.622.0",

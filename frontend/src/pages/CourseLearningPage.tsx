@@ -36,6 +36,9 @@ interface Evaluation {
   title: string;
   minScore: number;
   topicId: string | null;
+  passed?: boolean;
+  score?: number | null;
+  attemptNumber?: number | null;
 }
 
 function ReadingMaterial({ text }: { text: string }) {
@@ -306,8 +309,20 @@ export default function CourseLearningPage() {
                   <h4 className="font-medium text-slate-800">Evaluaciones de esta clase</h4>
                   {topicEvaluations.map((evaluation) => (
                     <div key={evaluation.id} className="flex flex-wrap items-center justify-between gap-3">
-                      <span>{evaluation.title}</span>
-                      <Link to={`/evaluaciones/${evaluation.id}`} className="text-slate-800 underline">
+                      <div className="flex items-center gap-2">
+                        <span>{evaluation.title}</span>
+                        {evaluation.passed && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded-md font-medium">
+                            ✓ Aprobada
+                          </span>
+                        )}
+                        {!evaluation.passed && evaluation.score !== null && evaluation.score !== undefined && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs rounded-md font-medium">
+                            ✗ Desaprobada
+                          </span>
+                        )}
+                      </div>
+                      <Link to={`/evaluaciones/${evaluation.id}`} className="text-slate-800 dark:text-slate-200 underline">
                         Rendir evaluación
                       </Link>
                     </div>
@@ -328,8 +343,20 @@ export default function CourseLearningPage() {
           <h2 className="text-xl font-semibold">Evaluaciones de cierre</h2>
           {closingEvaluations.map((evaluation) => (
             <div key={evaluation.id} className="flex flex-wrap items-center justify-between gap-3">
-              <span>{evaluation.title}</span>
-              <Link to={`/evaluaciones/${evaluation.id}`} className="text-slate-800 underline">
+              <div className="flex items-center gap-2">
+                <span>{evaluation.title}</span>
+                {evaluation.passed && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs rounded-md font-medium">
+                    ✓ Aprobada
+                  </span>
+                )}
+                {!evaluation.passed && evaluation.score !== null && evaluation.score !== undefined && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs rounded-md font-medium">
+                    ✗ Desaprobada
+                  </span>
+                )}
+              </div>
+              <Link to={`/evaluaciones/${evaluation.id}`} className="text-slate-800 dark:text-slate-200 underline">
                 Rendir evaluación
               </Link>
             </div>

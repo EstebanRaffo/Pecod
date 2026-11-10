@@ -33,8 +33,8 @@ import { InstitutionsModule } from '../institutions/institutions.module'; // HU2
     InstitutionsModule, // HU23
     ThrottlerModule.forRoot([ // HU22
       {
-        ttl: 3600000, // 1 hora en milisegundos
-        limit: 5, // 5 solicitudes
+        ttl: 60000, // 1 minuto
+        limit: 100, // 100 solicitudes por minuto - límite razonable para desarrollo
       },
     ]),
   ],
@@ -43,3 +43,4 @@ import { InstitutionsModule } from '../institutions/institutions.module'; // HU2
   exports: [AuthService],
 })
 export class AuthModule {}
+

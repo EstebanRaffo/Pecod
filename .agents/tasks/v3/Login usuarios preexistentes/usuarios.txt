@@ -1,0 +1,31 @@
+Usuario Alumno:
+user: efernandezraffo@uade.edu.ar
+pass: Alumno123!
+
+Usuario Profesor:
+user: francolmartinez@uade.edu.ar
+pass: Profesor123!
+
+Administrador de Sistema:
+user: admin@pecod.com
+pass: Admin123!
+
+Usuario Profesor Adicional:
+user: apotente@uade.edu.ar
+pass: Profesor456!
+
+Usuario Alumno Adicional:
+user: fradorno@uade.edu.ar
+pass: Alumno456!
+
+Usuario Alumno Externo:
+user: e.fraffo@gmail.com
+pass: External123!
+
+NOTAS:
+- Todas las contraseñas han sido hasheadas con bcrypt en la base de datos
+- Todos los usuarios tienen sus emails verificados
+- Los usuarios con dominio @uade.edu.ar pertenecen a la institución UADE
+- El usuario e.fraffo@gmail.com es un usuario externo (sin institución específica)
+- El administrador tiene alcance global (no pertenece a ninguna institución específica)
+- Todas estas credenciales han sido testeadas y funcionan correctamente

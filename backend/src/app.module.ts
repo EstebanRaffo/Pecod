@@ -42,8 +42,9 @@ import { PaymentsModule } from './payments/payments.module'; // HU26
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard, // HU22: Rate limiting global
+      useClass: ThrottlerGuard, // HU22: Rate limiting global con límites razonables
     },
   ],
 })
 export class AppModule {}
+
