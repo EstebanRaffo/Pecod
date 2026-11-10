@@ -10,6 +10,7 @@ interface Course {
   technology?: string | null;
   ratingAverage: number | null;
   ratingCount: number;
+  price?: number | null;
 }
 
 export default function CatalogPage() {
@@ -97,6 +98,11 @@ export default function CatalogPage() {
               </div>
               <h2 className="font-semibold text-lg text-slate-800 dark:text-slate-100">{course.name}</h2>
               <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{course.description}</p>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {course.price ? `$${course.price.toFixed(2)} ARS` : 'Gratuito'}
+                </span>
+              </div>
               <p className="mt-3 text-sm text-slate-600 dark:text-slate-300" aria-label="Calificación del curso">
                 {course.ratingCount === 0 ? (
                   'Sin calificaciones'

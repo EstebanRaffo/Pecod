@@ -16,6 +16,7 @@ import CourseEditorPage from './pages/CourseEditorPage';
 import AdminInstitutionsPage from './pages/AdminInstitutionsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import EvaluationPage from './pages/EvaluationPage';
+import PaymentPage from './pages/PaymentPage';
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -50,6 +51,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CourseDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/courses/:id/pagar"
+          element={
+            <ProtectedRoute allow={['STUDENT']}>
+              <PaymentPage />
             </ProtectedRoute>
           }
         />

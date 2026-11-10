@@ -21,6 +21,7 @@ interface CourseDetail {
   skills: string | null;
   isEnrolled: boolean;
   topics: Topic[];
+  price?: number | null;
 }
 
 export default function CourseDetailPage() {
@@ -115,6 +116,12 @@ export default function CourseDetailPage() {
 
       {error && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>}
 
+      <div className="flex items-center gap-4 mb-6">
+        <div className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+          {course.price ? `$${course.price.toFixed(2)} ARS` : 'Gratuito'}
+        </div>
+      </div>
+
       {user?.role === 'STUDENT' &&
         (course.isEnrolled ? (
           <button
@@ -122,6 +129,14 @@ export default function CourseDetailPage() {
             className="bg-slate-800 dark:bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-700 dark:hover:bg-slate-600"
           >
             Ir al contenido
+          </button>
+        ) : course.price && course.price > 0 ? (
+          <button
+            onClick={() => navigate(`/courses/${course.id}/pagar`)}
+            disabled={enrolling}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {enrolling ? 'Procesando...' : 'Pagar'}
           </button>
         ) : (
           <button

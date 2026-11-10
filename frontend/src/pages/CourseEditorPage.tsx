@@ -55,6 +55,7 @@ interface CourseDetail {
   skills: string | null;
   isPublished: boolean;
   topics: Topic[];
+  price?: number | null;
 }
 
 // ── Componente de sección con título y botón de edición ─────────────────────
@@ -99,6 +100,7 @@ export default function CourseEditorPage() {
   const [editingTechnology, setEditingTechnology] = useState(false);
   const [editingAcademicRequirements, setEditingAcademicRequirements] = useState(false);
   const [editingSkills, setEditingSkills] = useState(false);
+  const [editingPrice, setEditingPrice] = useState(false);
   const [editingTopics, setEditingTopics] = useState(false);
   const [editingEvaluations, setEditingEvaluations] = useState(false);
 
@@ -109,6 +111,7 @@ export default function CourseEditorPage() {
   const [draftTechnology, setDraftTechnology] = useState('');
   const [draftAcademicRequirements, setDraftAcademicRequirements] = useState('');
   const [draftSkills, setDraftSkills] = useState('');
+  const [draftPrice, setDraftPrice] = useState<number | undefined>(undefined);
   const [newTopicTitle, setNewTopicTitle] = useState('');
 
   // Modal despublicar
@@ -171,6 +174,15 @@ export default function CourseEditorPage() {
     e.preventDefault();
     await saveField({ skills: draftSkills || null });
     setEditingSkills(false);
+  }
+
+  async function handleSavePrice(e: FormEvent) {
+    e.preventDefault();
+    await api.patch(`/courses/${id}`, { 
+      price: draftPrice && draftPrice > 0 ? draftPrice : null 
+    });
+    loadCourse();
+    setEditingPrice(false);
   }
 
   async function handleAddTopic(e: FormEvent) {
@@ -359,6 +371,41 @@ export default function CourseEditorPage() {
           </form>
         ) : (
           <p className="text-slate-800 dark:text-slate-200">{course.technology ?? <span className="text-slate-400 dark:text-slate-500 italic">Sin especificar</span>}</p>
+        )}
+      </section>
+
+      {/* ── Precio ──────────────────────────────────────────────────────── */}
+      <section className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
+        <SectionHeader
+          title="Precio"
+          onEdit={() => { setDraftPrice(course.price ?? undefined); setEditingPrice(true); }}
+          editing={editingPrice}
+        />
+        {editingPrice ? (
+          <form onSubmit={handleSavePrice} className="flex gap-2">
+            <input
+              autoFocus
+              type="number"
+              value={draftPrice ?? ''}
+              onChange={(e) => setDraftPrice(e.target.value ? parseFloat(e.target.value) : undefined)}
+              placeholder="Ej: 99.99 (dejar vacío para gratuito)"
+              step="0.01"
+              min="0.01"
+              className="flex-1 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2 text-sm"
+            />
+            <button type="submit" className="bg-slate-800 dark:bg-slate-700 text-white px-3 py-2 rounded text-sm hover:bg-slate-700 dark:hover:bg-slate-600">
+              Guardar
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingPrice(false)}
+              className="border border-slate-300 dark:border-slate-600 dark:text-white px-3 py-2 rounded text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              Cancelar
+            </button>
+          </form>
+        ) : (
+          <p className="text-slate-800 dark:text-slate-200">{course.price ? `$${course.price.toFixed(2)} ARS` : <span className="text-slate-400 dark:text-slate-500 italic">Gratuito</span>}</p>
         )}
       </section>
 

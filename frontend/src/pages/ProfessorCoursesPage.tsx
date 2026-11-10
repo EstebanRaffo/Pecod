@@ -18,6 +18,7 @@ export default function ProfessorCoursesPage() {
   const [technology, setTechnology] = useState('');
   const [academicRequirements, setAcademicRequirements] = useState('');
   const [skills, setSkills] = useState('');
+  const [price, setPrice] = useState<number | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   function loadCourses() {
@@ -38,6 +39,7 @@ export default function ProfessorCoursesPage() {
         technology,
         academicRequirements,
         skills,
+        price: price && price > 0 ? price : undefined,
       });
       setName('');
       setDescription('');
@@ -45,6 +47,7 @@ export default function ProfessorCoursesPage() {
       setTechnology('');
       setAcademicRequirements('');
       setSkills('');
+      setPrice(undefined);
       loadCourses();
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'No se pudo crear el curso.');
@@ -83,6 +86,15 @@ export default function ProfessorCoursesPage() {
           value={technology}
           onChange={(e) => setTechnology(e.target.value)}
           required
+          className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
+        />
+        <input
+          type="number"
+          placeholder="Precio en ARS (opcional, dejar vacío para gratuito)"
+          value={price ?? ''}
+          onChange={(e) => setPrice(e.target.value ? parseFloat(e.target.value) : undefined)}
+          step="0.01"
+          min="0.01"
           className="w-full border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 rounded px-3 py-2"
         />
         <textarea
