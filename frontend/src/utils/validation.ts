@@ -3,6 +3,24 @@
  */
 
 /**
+ * Formatea un precio con formato local argentino
+ * @param price - Precio como número
+ * @returns Precio formateado: $X.XXX,XX ARS
+ */
+export function formatPrice(price: number | string | null | undefined): string {
+  if (price === null || price === undefined || price === '') return 'Gratuito';
+  
+  const numPrice = Number(price);
+  if (numPrice <= 0) return 'Gratuito';
+  
+  // Formato argentino: punto para miles, coma para decimales
+  return `$${numPrice.toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} ARS`;
+}
+
+/**
  * Algoritmo de Luhn para validar números de tarjeta
  * @param cardNumber - Número de tarjeta sin espacios
  * @returns true si el número pasa la validación de Luhn

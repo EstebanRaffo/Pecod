@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { getCourseProgress } from '../api/progress';
+import { formatPrice } from '../utils/validation';
 import { CourseReviewSection } from '../components/CourseReviewSection';
 
 interface Topic {
@@ -118,10 +119,7 @@ export default function CourseDetailPage() {
 
       <div className="flex items-center gap-4 mb-6">
         <div className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-          {course.price && Number(course.price) > 0 
-            ? `$${Number(course.price).toFixed(2)} ARS` 
-            : 'Gratuito'
-          }
+          {formatPrice(course.price)}
         </div>
       </div>
 

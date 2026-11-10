@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import TopicMediaUploader from '../components/TopicMediaUploader';
 import EvaluationCreator from '../components/EvaluationCreator';
 import EvaluationEditor from '../components/EvaluationEditor';
+import { formatPrice } from '../utils/validation';
 import { Eye } from 'lucide-react';
 
 // ── Icono de lápiz (edición) ────────────────────────────────────────────────
@@ -406,10 +407,7 @@ export default function CourseEditorPage() {
           </form>
         ) : (
           <p className="text-slate-800 dark:text-slate-200">
-            {course.price && Number(course.price) > 0 
-              ? `$${Number(course.price).toFixed(2)} ARS` 
-              : <span className="text-slate-400 dark:text-slate-500 italic">Gratuito</span>
-            }
+            {formatPrice(course.price)}
           </p>
         )}
       </section>
