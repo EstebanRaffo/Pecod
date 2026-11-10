@@ -1,4 +1,4 @@
-# Resumen de Implementación: HU-25 - Foro de consultas por curso
+# Resumen de Implementación: HU-24 - Foro de consultas por curso
 
 **Fecha de implementación:** 2026-11-09  
 **Versión:** V3  
@@ -8,7 +8,7 @@
 
 ## Resumen Ejecutivo
 
-Se ha implementado completamente la Historia de Usuario HU-25: un foro de consultas por curso que permite a Alumnos y Profesores crear, responder y gestionar consultas sobre temas específicos del temario. La implementación sigue las convenciones del repositorio y cumple con todos los criterios de aceptación definidos.
+Se ha implementado completamente la Historia de Usuario HU-24: un foro de consultas por curso que permite a Alumnos y Profesores crear, responder y gestionar consultas sobre temas específicos del temario. La implementación sigue las convenciones del repositorio y cumple con todos los criterios de aceptación definidos.
 
 ---
 
@@ -290,11 +290,11 @@ npx prisma migrate resolve --rolled-back 20261109140000_add_forum_tables  # Revi
 - ✅ Control de acceso centralizado
 - ✅ Sin secretos ni datos sensibles
 - ✅ README actualizado (V3)
-- ✅ Plan documentado en `.agents/tasks/plan-HU-25.md`
+- ✅ Plan documentado en `.agents/tasks/plan-HU-24.md`
 
 ---
 
-## Fuera de Alcance (Según HU-25)
+## Fuera de Alcance (Según HU-24)
 
 Los siguientes aspectos fueron explícitamente excluidos:
 - Edición de consultas y respuestas

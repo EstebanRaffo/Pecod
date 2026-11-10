@@ -1,4 +1,4 @@
-# HU-26: Monetización de Cursos (Pago Simulado) - Implementación
+# HU-25: Monetización de Cursos (Pago Simulado) - Implementación
 
 ## Resumen del Trabajo Realizado
 
@@ -276,7 +276,7 @@ No hay nuevas variables de entorno requeridas. La pasarela es 100% simulada.
 
 ## Nuevas Funcionalidades
 
-### HU-26: Monetización de Cursos (Pago Simulado)
+### HU-25: Monetización de Cursos (Pago Simulado)
 - Cursos pueden tener precio en ARS (pesos argentinos)
 - Pago mediante formulario de tarjeta con tarjetas de prueba
 - Transacción atómica: pago + inscripción
@@ -332,4 +332,4 @@ npm run cypress open  # probar flujos manuales
 - enrollments.service.ts (+validación de precio)
 - create-course.dto.ts (+price)
 
-**Total Tests:** 276 pasando, 33 nuevos para HU-26
+**Total Tests:** 276 pasando, 33 nuevos para HU-25

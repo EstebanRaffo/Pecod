@@ -1,4 +1,4 @@
-# Plan de Implementación: HU-25 - Foro de consultas por curso
+# Plan de Implementación: HU-24 - Foro de consultas por curso
 
 **Fecha**: 2026-11-09  
 **Versión**: V3  

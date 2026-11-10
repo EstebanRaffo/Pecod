@@ -1,4 +1,4 @@
-# Plan de Implementación: HU-24 - Recomendación de Cursos
+# Plan de Implementación: HU-23 - Recomendación de Cursos
 
 ## Hallazgos de Exploración
 
@@ -167,7 +167,7 @@ Nuevo test:
 - Seed: sin cambios necesarios (no genera datos de recomendaciones).
 
 ### 6. Documentación
-- Actualizar README: HU-24 implementada, variable de entorno `CRON_SCHEDULE` (opcional), cómo probar manualmente.
+- Actualizar README: HU-23 implementada, variable de entorno `CRON_SCHEDULE` (opcional), cómo probar manualmente.
 
 ## Riesgos y Mitigaciones
 
@@ -184,7 +184,7 @@ Nuevo test:
 
 1. **Enum extendido**: `ContentEvent` incluye `COURSE_RECOMMENDED` sin romper HU-17.
 2. **Tarea semanal**: lunes 09:00 UTC (configurable vía `.env` si es necesario).
-3. **Máximo 3 por alumno**: como especifica HU-24.
+3. **Máximo 3 por alumno**: como especifica HU-23.
 4. **Sin modelo IA**: usar perfil simple basado en pesos acumulados.
 5. **Endpoint ADMIN**: para ejecutar manualmente en tests y demos.
 

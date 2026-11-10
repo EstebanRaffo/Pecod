@@ -1,4 +1,4 @@
-# Plan de Implementación: HU-26 Monetización de Cursos (Pago Simulado)
+# Plan de Implementación: HU-25 Monetización de Cursos (Pago Simulado)
 
 ## Estado: ✅ BACKEND COMPLETO | ⏳ FRONTEND POR INICIAR
 
@@ -191,8 +191,8 @@ npm run cypress open   # por crear tests
 9. `backend/prisma/migrations/20261109143355_add_payments_and_course_price/migration.sql`
 
 **Documentación:**
-10. `HU-26-IMPLEMENTATION-SUMMARY.md` (este archivo)
-11. `.agents/tasks/plan-HU-26.md` (plan detallado)
+10. `HU-25-IMPLEMENTATION-SUMMARY.md` (este archivo)
+11. `.agents/tasks/plan-HU-25.md` (plan detallado)
 
 ## Archivos Modificados
 

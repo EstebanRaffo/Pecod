@@ -1,4 +1,4 @@
-# Prompt de implementación: HU-26: Monetización de cursos (pago simulado con tarjeta de prueba)
+# Prompt de implementación: HU-25: Monetización de cursos (pago simulado con tarjeta de prueba)
 
 Sos un desarrollador senior full-stack trabajando en el repositorio PECOD. Implementá la historia de usuario descrita abajo de punta a punta (base de datos, backend, frontend y tests), siguiendo las convenciones del repositorio. Si algo de este prompt contradice lo que encontrás en el código, priorizá lo que verifiques en el código, avisalo en tu plan y avanzá con la opción más conservadora.
 

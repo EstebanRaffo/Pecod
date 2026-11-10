@@ -1,4 +1,4 @@
-# HU-24: Recomendación de Cursos - Resumen de Implementación
+# HU-23: Recomendación de Cursos - Resumen de Implementación
 
 ## Descripción
 
