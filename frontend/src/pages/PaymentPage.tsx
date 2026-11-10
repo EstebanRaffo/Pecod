@@ -162,7 +162,7 @@ export default function PaymentPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">Pagar por el curso</h1>
         <p className="text-slate-600 dark:text-slate-400 mt-1">{course.name}</p>
-        <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-2">${course.price?.toFixed(2)} ARS</p>
+        <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-2">${Number(course.price ?? 0).toFixed(2)} ARS</p>
       </div>
 
       {/* Mostrar resultado si el pago fue aprobado o rechazado */}

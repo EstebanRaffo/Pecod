@@ -100,7 +100,10 @@ export default function CatalogPage() {
               <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{course.description}</p>
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {course.price ? `$${course.price.toFixed(2)} ARS` : 'Gratuito'}
+                  {course.price && Number(course.price) > 0 
+                    ? `$${Number(course.price).toFixed(2)} ARS` 
+                    : 'Gratuito'
+                  }
                 </span>
               </div>
               <p className="mt-3 text-sm text-slate-600 dark:text-slate-300" aria-label="Calificación del curso">

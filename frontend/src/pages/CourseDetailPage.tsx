@@ -118,7 +118,10 @@ export default function CourseDetailPage() {
 
       <div className="flex items-center gap-4 mb-6">
         <div className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-          {course.price ? `$${course.price.toFixed(2)} ARS` : 'Gratuito'}
+          {course.price && Number(course.price) > 0 
+            ? `$${Number(course.price).toFixed(2)} ARS` 
+            : 'Gratuito'
+          }
         </div>
       </div>
 
@@ -130,7 +133,7 @@ export default function CourseDetailPage() {
           >
             Ir al contenido
           </button>
-        ) : course.price && course.price > 0 ? (
+        ) : Number(course.price ?? 0) > 0 ? (
           <button
             onClick={() => navigate(`/courses/${course.id}/pagar`)}
             disabled={enrolling}

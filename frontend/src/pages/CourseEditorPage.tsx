@@ -405,7 +405,12 @@ export default function CourseEditorPage() {
             </button>
           </form>
         ) : (
-          <p className="text-slate-800 dark:text-slate-200">{course.price ? `$${course.price.toFixed(2)} ARS` : <span className="text-slate-400 dark:text-slate-500 italic">Gratuito</span>}</p>
+          <p className="text-slate-800 dark:text-slate-200">
+            {course.price && Number(course.price) > 0 
+              ? `$${Number(course.price).toFixed(2)} ARS` 
+              : <span className="text-slate-400 dark:text-slate-500 italic">Gratuito</span>
+            }
+          </p>
         )}
       </section>
 
