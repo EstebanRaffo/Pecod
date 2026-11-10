@@ -79,7 +79,7 @@ export async function createThread(
 }
 
 export async function getThread(threadId: string): Promise<ForumThreadDetail> {
-  const { data } = await api.get<ForumThreadDetail>(`/forum/threads/${threadId}`);
+  const { data } = await api.get<ForumThreadDetail>(`/courses/forum/threads/${threadId}`);
   return data;
 }
 
@@ -88,16 +88,16 @@ export async function createPost(
   payload: CreatePostPayload,
 ): Promise<ForumPost> {
   const { data } = await api.post<ForumPost>(
-    `/forum/threads/${threadId}/posts`,
+    `/courses/forum/threads/${threadId}/posts`,
     payload,
   );
   return data;
 }
 
 export async function deleteThread(threadId: string): Promise<void> {
-  await api.delete(`/forum/threads/${threadId}`);
+  await api.delete(`/courses/forum/threads/${threadId}`);
 }
 
 export async function deletePost(postId: string): Promise<void> {
-  await api.delete(`/forum/posts/${postId}`);
+  await api.delete(`/courses/forum/posts/${postId}`);
 }
