@@ -319,6 +319,14 @@ export function ForumPage() {
                 setTotalPages(res.pagination.totalPages);
               });
             }}
+            onPostsChanged={() => {
+              // Reload threads to update reply count
+              const response = forumApi.getThreads(courseId!);
+              response.then((res) => {
+                setThreads(res.data);
+                setTotalPages(res.pagination.totalPages);
+              });
+            }}
           />
         )}
 
@@ -344,6 +352,7 @@ interface ForumThreadDetailModalProps {
   courseId: string;
   onClose: () => void;
   onThreadDeleted: () => void;
+  onPostsChanged?: () => void;
 }
 
 function ForumThreadDetailModal({
@@ -351,6 +360,7 @@ function ForumThreadDetailModal({
   courseId,
   onClose,
   onThreadDeleted,
+  onPostsChanged,
 }: ForumThreadDetailModalProps) {
   const { user } = useAuth();
   const [thread, setThread] = useState<forumApi.ForumThreadDetail | null>(null);
@@ -394,6 +404,8 @@ function ForumThreadDetailModal({
       // Reload thread
       const data = await forumApi.getThread(threadId);
       setThread(data);
+      // Notify parent to update thread list
+      onPostsChanged?.();
     } catch (err) {
       setPostError((err as Error).message || 'Error creating post');
     }
@@ -407,6 +419,8 @@ function ForumThreadDetailModal({
       // Reload thread
       const data = await forumApi.getThread(threadId);
       setThread(data);
+      // Notify parent to update thread list
+      onPostsChanged?.();
     } catch (err) {
       setError((err as Error).message || 'Error deleting post');
     }
