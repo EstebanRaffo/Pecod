@@ -2,6 +2,11 @@ import { useCallback, useRef, useState } from 'react';
 
 const MAX_DURATION_SECONDS = 1800; // 30 min (HU6, mismo límite que HU5)
 
+interface RecordingResult {
+  blob: Blob;
+  hasAudio: boolean;
+}
+
 export function useScreenRecorder() {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -9,6 +14,22 @@ export function useScreenRecorder() {
   const chunksRef = useRef<Blob[]>([]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelledRef = useRef(false);
+  const hasAudioRef = useRef(false);
+
+  const getPreferredMimeType = (): string => {
+    const mimeTypes = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm;codecs=h264,opus',
+      'video/webm',
+    ];
+    for (const mimeType of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        return mimeType;
+      }
+    }
+    return '';
+  };
 
   const start = useCallback(async (): Promise<void> => {
     setError(null);
@@ -18,31 +39,43 @@ export function useScreenRecorder() {
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       chunksRef.current = [];
       cancelledRef.current = false;
+      hasAudioRef.current = stream.getAudioTracks().length > 0;
 
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      const mimeType = getPreferredMimeType();
+      if (!mimeType) {
+        setError('Tu navegador no soporta la grabación de video.');
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      const recorder = new MediaRecorder(stream, { mimeType });
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
-      // Si el usuario corta el compartir pantalla desde el propio navegador,
-      // tratamos eso como "finalizar grabación" (no como cancelación).
+
       stream.getVideoTracks()[0].onended = () => stop();
 
       recorder.start();
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
 
-      // HU6: límite de 30 minutos -> corta automáticamente y avisa el límite alcanzado.
       timeoutRef.current = setTimeout(() => {
         setError('Se alcanzó el límite de 30 minutos de grabación.');
         stop();
       }, MAX_DURATION_SECONDS * 1000);
-    } catch {
-      setError('No se pudo iniciar la grabación (permisos denegados o cancelados).');
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError') {
+        setError('Grabación cancelada. Asegúrate de autorizar los permisos de pantalla y audio.');
+      } else if (err.name === 'NotFoundError') {
+        setError('No se encontró ninguna pantalla para grabar.');
+      } else {
+        setError('No se pudo iniciar la grabación (permisos denegados o cancelados).');
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const stop = useCallback((): Promise<Blob | null> => {
+  const stop = useCallback((): Promise<RecordingResult | null> => {
     return new Promise((resolve) => {
       const recorder = mediaRecorderRef.current;
       if (!recorder || recorder.state === 'inactive') {
@@ -54,18 +87,20 @@ export function useScreenRecorder() {
       recorder.onstop = () => {
         recorder.stream.getTracks().forEach((track) => track.stop());
         setIsRecording(false);
-        // HU6: "si la grabación se cancela antes de finalizar, no se genera archivo"
+
         if (cancelledRef.current || chunksRef.current.length === 0) {
           resolve(null);
           return;
         }
-        resolve(new Blob(chunksRef.current, { type: 'video/webm' }));
+
+        const mimeType = recorder.mimeType || 'video/webm';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        resolve({ blob, hasAudio: hasAudioRef.current });
       };
       recorder.stop();
     });
   }, []);
 
-  // Cancela sin generar ningún archivo (HU6).
   const cancel = useCallback(() => {
     cancelledRef.current = true;
     stop();

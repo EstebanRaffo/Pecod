@@ -191,9 +191,31 @@ export default function TopicMediaUploader({
 
   // HU6: grabación de pantalla — persiste en screenRecordingUrl (endpoint separado)
   async function handleStopRecording() {
-    const blob = await stop();
-    if (!blob) return;
+    const result = await stop();
+    if (!result) return;
+    const { blob, hasAudio } = result;
+
     setError(null);
+
+    if (!hasAudio) {
+      askConfirm(
+        '⚠️ La grabación no tiene audio. Esto puede ocurrir si no autorizaste los permisos de audio en el navegador. ¿Querés continuar sin audio o volver a grabar?',
+        async () => {
+          await uploadRecording(blob);
+        },
+        {
+          title: 'Sin audio detectado',
+          confirmLabel: 'Continuar sin audio',
+          destructive: false,
+        },
+      );
+      return;
+    }
+
+    await uploadRecording(blob);
+  }
+
+  async function uploadRecording(blob: Blob) {
     setStatus('Subiendo grabación...');
     try {
       const durationSeconds = await getVideoDurationSeconds(blob);
