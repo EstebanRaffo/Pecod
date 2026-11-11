@@ -114,6 +114,7 @@ export class EvaluationsService {
         ...(dto.minScore !== undefined ? { minScore: dto.minScore } : {}),
         ...(dto.maxAttempts !== undefined ? { maxAttempts: dto.maxAttempts } : {}), // HU19
       },
+      include: { questions: { orderBy: { order: 'asc' }, include: { options: true } } },
     });
   }
 
@@ -233,7 +234,14 @@ export class EvaluationsService {
     });
 
     const { evaluationSnapshot, ...publicAttempt } = attempt;
-    return { attempt: publicAttempt, score, passed, feedback };
+    return {
+      attempt: publicAttempt,
+      score,
+      passed,
+      feedback,
+      attemptsUsed: attempts.length + 1,
+      maxAttempts: evaluation.maxAttempts,
+    };
   }
 
   private getAttemptVersion(

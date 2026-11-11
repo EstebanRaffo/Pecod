@@ -24,6 +24,8 @@ interface SubmitResult {
   score: number;
   passed: boolean;
   feedback: { questionId: string; correct: boolean }[];
+  attemptsUsed: number;
+  maxAttempts: number;
 }
 
 export default function EvaluationPage() {
@@ -62,7 +64,7 @@ export default function EvaluationPage() {
   if (!evaluation) return <p className="p-6 text-slate-700 dark:text-slate-300">Cargando...</p>;
 
   if (result) {
-    const canRetry = evaluation.attemptsUsed < evaluation.maxAttempts;
+    const canRetry = !result.passed && result.attemptsUsed < result.maxAttempts;
 
     return (
       <div className="max-w-2xl mx-auto p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
@@ -78,7 +80,7 @@ export default function EvaluationPage() {
 
           <div className="mb-4 p-3 bg-slate-100 dark:bg-slate-700 rounded">
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              <strong>Intentos realizados:</strong> {evaluation.attemptsUsed + 1} de {evaluation.maxAttempts}
+              <strong>Intentos realizados:</strong> {result.attemptsUsed} de {result.maxAttempts}
             </p>
           </div>
 
@@ -94,7 +96,7 @@ export default function EvaluationPage() {
           </div>
 
           <div className="flex gap-2">
-            {!result.passed && canRetry && (
+            {canRetry && (
               <button
                 onClick={() => {
                   setResult(null);
